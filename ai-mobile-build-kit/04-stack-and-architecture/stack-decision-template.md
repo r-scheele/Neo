@@ -14,7 +14,7 @@ Use this whenever choosing or changing the app stack. Start with the default sta
 - Auth: Clerk
 - Analytics: PostHog
 - Builds: EAS Build
-- Review: CodeRabbit, Codex, Cursor, or another AI reviewer
+- Review: CodeRabbit, an AI coding assistant, Cursor, or another AI reviewer
 
 ## App Requirements
 

@@ -97,6 +97,6 @@ Create one clean production-ready mobile app screenshot-style mockup with high v
 
 `design-assets/ui-screens/delivery-zones.png`
 
-## 22. Later Codex Implementation Reference
+## 22. Later Implementation Reference
 
-After generating this image, attach it to the Codex implementation prompt with `AGENTS.md`, `docs/ui-style-guide.md`, `docs/visual-direction.md`, this prompt file, `design-assets/ui-screens/delivery-zones.png`, `assets/images/`, and `constants/images.ts`.
+After generating this image, attach it to the implementation prompt with `AGENTS.md`, `docs/ui-style-guide.md`, `docs/visual-direction.md`, this prompt file, `design-assets/ui-screens/delivery-zones.png`, `assets/images/`, and `constants/images.ts`.

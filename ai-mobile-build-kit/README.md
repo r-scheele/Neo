@@ -30,7 +30,7 @@ The templates assume this default mobile stack unless you choose otherwise:
 - Clerk for auth
 - PostHog for analytics
 - EAS Build
-- CodeRabbit, Codex, Cursor, or another AI reviewer
+- CodeRabbit, an AI coding assistant, Cursor, or another AI reviewer
 
 The prompts are adaptable to other stacks. When using a different stack, update `AGENTS.md`, the architecture plan, and all relevant prompt references before coding.
 
@@ -53,7 +53,7 @@ The prompts are adaptable to other stacks. When using a different stack, update 
 - `02-design-research/`: visual research, style guide, references, competitors, and screen states.
 - `03-image-generation-prompts/`: reusable prompts for consistent mobile assets.
 - `04-stack-and-architecture/`: stack decisions, architecture, state, auth, persistence, analytics, and security.
-- `05-project-setup/`: setup checklists and setup prompts for Codex or another coding agent.
+- `05-project-setup/`: setup checklists and setup prompts for an AI coding assistant or another coding agent.
 - `06-agents-md/`: complete `AGENTS.md` templates and update rules.
 - `07-code-generation-prompts/`: the main prompt library for building screens, components, integrations, tests, and fixes.
 - `08-feature-development-loop/`: the repeatable build loop for one feature at a time.
@@ -91,7 +91,7 @@ Use this loop every working session:
 2. Write a feature spec using `08-feature-development-loop/feature-spec-template.md`.
 3. Choose one prompt from `07-code-generation-prompts/`.
 4. Fill in anchor, task, constraints, reference, and acceptance criteria.
-5. Send the prompt to Codex, Cursor, ChatGPT, Gemini, or another coding model.
+5. Send the prompt to an AI coding assistant, Cursor, ChatGPT, Gemini, or another coding model.
 6. Review the diff manually.
 7. Run the app.
 8. Test the new feature.

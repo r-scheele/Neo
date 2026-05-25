@@ -1,0 +1,17 @@
+export const routes = {
+  welcome: "/(auth)/welcome",
+  signIn: "/(auth)/sign-in",
+  setup: "/(setup)",
+  businessProfile: "/(setup)/business-profile",
+  businessType: "/(setup)/business-type",
+  whatsappSetup: "/(setup)/whatsapp-setup",
+  aiPersonality: "/(setup)/ai-personality",
+  paymentRules: "/(setup)/payment-rules",
+  deliveryZones: "/(setup)/delivery-zones",
+  productBasics: "/(setup)/product-basics",
+  today: "/(tabs)/today",
+  inbox: "/(tabs)/inbox",
+  approvals: "/(tabs)/approvals",
+  followUps: "/(tabs)/follow-ups",
+  settings: "/(tabs)/settings",
+} as const;

@@ -60,7 +60,7 @@ Core visual assets and production SVG icons have been generated. Raster icon PNG
 
 ## UI Design Reference Images
 
-These are planning-only UI screenshot references for Codex implementation prompts. They belong in `design-assets/ui-screens/`, not `assets/images/`, and they are not shipped inside the app.
+These are planning-only UI screenshot references for implementation prompts. They belong in `design-assets/ui-screens/`, not `assets/images/`, and they are not shipped inside the app.
 
 | Screen | Prompt File | File Name | Status | Notes |
 | --- | --- | --- | --- | --- |
