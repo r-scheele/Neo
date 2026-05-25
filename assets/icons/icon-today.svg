@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Today">
+  <title>Today</title>
+  <rect x="3.5" y="5" width="17" height="15.5" rx="3"/>
+  <path d="M7.5 3.5v3"/>
+  <path d="M16.5 3.5v3"/>
+  <path d="M3.5 9h17"/>
+  <path d="M8 13h.01"/>
+  <path d="M12 13h.01"/>
+  <path d="m9.2 16.2 1.9 1.9 4.4-4.5"/>
+</svg>
