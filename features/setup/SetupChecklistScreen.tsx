@@ -48,7 +48,7 @@ const setupTasks: readonly SetupTask[] = [
     id: "ai-personality",
     title: "AI personality & tone",
     description: "Set how Neo should talk for you",
-    status: "current",
+    status: "done",
     icon: images.iconAiDraft,
     route: routes.aiPersonality,
   },
@@ -56,8 +56,9 @@ const setupTasks: readonly SetupTask[] = [
     id: "payment-rules",
     title: "Payment rules",
     description: "Methods and receipt review rules",
-    status: "todo",
+    status: "current",
     icon: images.iconReceiptReview,
+    route: routes.paymentRules,
   },
   {
     id: "delivery-zones",
@@ -219,6 +220,7 @@ export function SetupChecklistScreen() {
   const isCompactPhone = height < 760 || width < 380;
   const horizontalPadding = width >= 390 ? 20 : 16;
   const [viewState, setViewState] = useState<SetupChecklistViewState>("ready");
+  const nextTaskRoute = nextTask.route;
 
   return (
     <ScrollView
@@ -307,7 +309,7 @@ export function SetupChecklistScreen() {
                       </Text>
                     </View>
                     <View className="mt-4 h-2 overflow-hidden rounded-full bg-neo-border">
-                      <View className="h-2 w-[43%] rounded-full bg-neo-primary" />
+                      <View className="h-2 w-[57%] rounded-full bg-neo-primary" />
                     </View>
                     <Text className="mt-4 text-[14px] leading-5 text-neo-text-muted">
                       Almost there. Complete the next steps to unlock safer AI
@@ -326,45 +328,42 @@ export function SetupChecklistScreen() {
                 </View>
               </View>
 
-              <Pressable
-                accessibilityHint="The Payment rules screen has not been built yet."
-                accessibilityLabel="Next step, Payment rules, needs attention"
-                accessibilityRole="button"
-                accessibilityState={{ disabled: true }}
-                className="mt-5 min-h-24 flex-row items-center gap-4 rounded-lg border border-neo-warning bg-neo-surface px-4 py-4"
-                disabled
-              >
-                <View className="h-16 w-16 items-center justify-center rounded-full border border-neo-border bg-neo-background">
-                  <Image
-                    accessibilityIgnoresInvertColors
-                    resizeMode="contain"
-                    source={nextTask.icon}
-                    style={{ height: 38, width: 38 }}
-                  />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-[12px] font-bold uppercase leading-4 text-neo-warning">
-                    Your next step
-                  </Text>
-                  <Text className="mt-1 text-[20px] font-bold leading-7 text-neo-text">
-                    {nextTask.title}
-                  </Text>
-                  <Text className="mt-1 text-[14px] leading-5 text-neo-text-muted">
-                    Set how customers pay and how receipts are reviewed safely.
-                  </Text>
-                  <Text className="mt-1 text-[12px] font-semibold leading-4 text-neo-warning">
-                    Task screen not ready
-                  </Text>
-                </View>
-                <View className="items-end gap-2">
-                  <View className="rounded-full border border-neo-warning px-3 py-1">
-                    <Text className="text-[13px] font-bold leading-4 text-neo-warning">
-                      Needs attention
+              <Link asChild href={(nextTaskRoute ?? routes.setup) as Href}>
+                <Pressable
+                  accessibilityHint="Opens the next setup task."
+                  accessibilityLabel="Next step, Payment rules, needs attention"
+                  accessibilityRole="link"
+                  className="mt-5 min-h-24 flex-row items-center gap-4 rounded-lg border border-neo-warning bg-neo-surface px-4 py-4"
+                >
+                  <View className="h-16 w-16 items-center justify-center rounded-full border border-neo-border bg-neo-background">
+                    <Image
+                      accessibilityIgnoresInvertColors
+                      resizeMode="contain"
+                      source={nextTask.icon}
+                      style={{ height: 38, width: 38 }}
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-[12px] font-bold uppercase leading-4 text-neo-warning">
+                      Your next step
+                    </Text>
+                    <Text className="mt-1 text-[20px] font-bold leading-7 text-neo-text">
+                      {nextTask.title}
+                    </Text>
+                    <Text className="mt-1 text-[14px] leading-5 text-neo-text-muted">
+                      Set how customers pay and how receipts are reviewed safely.
                     </Text>
                   </View>
-                  <Text className="text-[28px] leading-8 text-neo-text-muted">{">"}</Text>
-                </View>
-              </Pressable>
+                  <View className="items-end gap-2">
+                    <View className="rounded-full border border-neo-warning px-3 py-1">
+                      <Text className="text-[13px] font-bold leading-4 text-neo-warning">
+                        Needs attention
+                      </Text>
+                    </View>
+                    <Text className="text-[28px] leading-8 text-neo-text-muted">{">"}</Text>
+                  </View>
+                </Pressable>
+              </Link>
 
               <Text className="mt-6 text-[16px] font-semibold leading-6 text-neo-text">
                 Complete these steps

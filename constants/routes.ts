@@ -6,6 +6,7 @@ export const routes = {
   businessType: "/(setup)/business-type",
   whatsappSetup: "/(setup)/whatsapp-setup",
   aiPersonality: "/(setup)/ai-personality",
+  paymentRules: "/(setup)/payment-rules",
   today: "/(tabs)/today",
   inbox: "/(tabs)/inbox",
   approvals: "/(tabs)/approvals",
