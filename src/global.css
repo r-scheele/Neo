@@ -1,0 +1,41 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+@import "nativewind/theme";
+
+@layer theme {
+  @theme {
+    --color-neo-primary: #0e3b2e;
+    --color-neo-primary-pressed: #092a21;
+    --color-neo-background: #fbf7ef;
+    --color-neo-surface: #fffdf8;
+    --color-neo-surface-alt: #f1e7d6;
+    --color-neo-text: #1f2522;
+    --color-neo-text-muted: #6f766f;
+    --color-neo-border: #e4d8c5;
+    --color-neo-success: #247a52;
+    --color-neo-warning: #b7791f;
+    --color-neo-error: #b9473a;
+    --color-neo-info: #2f6f8f;
+    --color-neo-gold: #c6a15b;
+    --color-neo-terracotta: #b86a4b;
+  }
+}
+
+@media android {
+  :root {
+    --font-mono: monospace;
+    --font-rounded: normal;
+    --font-serif: serif;
+    --font-sans: normal;
+  }
+}
+
+@media ios {
+  :root {
+    --font-mono: ui-monospace;
+    --font-serif: ui-serif;
+    --font-sans: system-ui;
+    --font-rounded: ui-rounded;
+  }
+}

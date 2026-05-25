@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Neo",
+    "slug": "neo",
+    "scheme": "neo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/app-icon-source-neo.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/images/splash-screen-neo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FBF7EF"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/app-icon-foreground-neo.png",
+        "backgroundColor": "#FBF7EF"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/images/app-icon-source-neo.png"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
