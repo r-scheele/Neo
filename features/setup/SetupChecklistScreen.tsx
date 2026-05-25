@@ -56,7 +56,7 @@ const setupTasks: readonly SetupTask[] = [
     id: "payment-rules",
     title: "Payment rules",
     description: "Methods and receipt review rules",
-    status: "current",
+    status: "done",
     icon: images.iconReceiptReview,
     route: routes.paymentRules,
   },
@@ -64,21 +64,23 @@ const setupTasks: readonly SetupTask[] = [
     id: "delivery-zones",
     title: "Delivery zones",
     description: "Areas and delivery settings",
-    status: "todo",
+    status: "done",
     icon: images.iconDelivery,
+    route: routes.deliveryZones,
   },
   {
     id: "product-basics",
     title: "Product basics",
     description: "Add key products and prices",
-    status: "todo",
+    status: "current",
     icon: images.iconProduct,
+    route: routes.productBasics,
   },
 ];
 
 const completedTaskCount = setupTasks.filter((task) => task.status === "done").length;
 const totalTaskCount = setupTasks.length;
-const nextTask = setupTasks.find((task) => task.id === "payment-rules") ?? setupTasks[0];
+const nextTask = setupTasks.find((task) => task.id === "product-basics") ?? setupTasks[0];
 
 function getStatusLabel(status: SetupTaskStatus) {
   if (status === "done") {
@@ -309,7 +311,7 @@ export function SetupChecklistScreen() {
                       </Text>
                     </View>
                     <View className="mt-4 h-2 overflow-hidden rounded-full bg-neo-border">
-                      <View className="h-2 w-[57%] rounded-full bg-neo-primary" />
+                      <View className="h-2 w-[86%] rounded-full bg-neo-primary" />
                     </View>
                     <Text className="mt-4 text-[14px] leading-5 text-neo-text-muted">
                       Almost there. Complete the next steps to unlock safer AI
@@ -351,7 +353,7 @@ export function SetupChecklistScreen() {
                       {nextTask.title}
                     </Text>
                     <Text className="mt-1 text-[14px] leading-5 text-neo-text-muted">
-                      Set how customers pay and how receipts are reviewed safely.
+                      Add starter products so Neo can answer prices accurately.
                     </Text>
                   </View>
                   <View className="items-end gap-2">

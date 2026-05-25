@@ -7,6 +7,8 @@ export const routes = {
   whatsappSetup: "/(setup)/whatsapp-setup",
   aiPersonality: "/(setup)/ai-personality",
   paymentRules: "/(setup)/payment-rules",
+  deliveryZones: "/(setup)/delivery-zones",
+  productBasics: "/(setup)/product-basics",
   today: "/(tabs)/today",
   inbox: "/(tabs)/inbox",
   approvals: "/(tabs)/approvals",
