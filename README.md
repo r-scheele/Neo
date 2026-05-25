@@ -1,6 +1,16 @@
+<p align="center">
+  <img src="assets/images/logo-mark-neo.png" alt="Neo logo" width="112" />
+</p>
+
 # Neo
 
 Neo is an AI-powered WhatsApp commerce operating system for Nigerian SMEs. It helps sellers review conversations, set up business rules, keep payment decisions approval-first, and stay in control from a mobile-first command center.
+
+Neo is built for WhatsApp-first sellers who manage chats, product questions, orders, bank-transfer receipts, delivery coordination, and follow-ups from their phones.
+
+## Tags
+
+`ai-commerce` `whatsapp-commerce` `nigerian-smes` `expo` `react-native` `typescript` `mobile-app` `commerce-operations` `receipt-review` `order-management`
 
 ## Stack
 

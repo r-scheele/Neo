@@ -2,6 +2,18 @@
   "name": "neo",
   "version": "1.0.0",
   "description": "AI-powered WhatsApp commerce operating system for Nigerian SMEs.",
+  "keywords": [
+    "ai-commerce",
+    "whatsapp-commerce",
+    "nigerian-smes",
+    "expo",
+    "react-native",
+    "typescript",
+    "mobile-app",
+    "commerce-operations",
+    "receipt-review",
+    "order-management"
+  ],
   "private": true,
   "main": "expo-router/entry",
   "repository": {
