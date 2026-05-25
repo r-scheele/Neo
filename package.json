@@ -1,8 +1,17 @@
 {
   "name": "neo",
   "version": "1.0.0",
+  "description": "AI-powered WhatsApp commerce operating system for Nigerian SMEs.",
   "private": true,
   "main": "expo-router/entry",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/r-scheele/Neo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/r-scheele/Neo/issues"
+  },
+  "homepage": "https://github.com/r-scheele/Neo#readme",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
