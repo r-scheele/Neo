@@ -99,8 +99,8 @@ Output requirements:
 Save generated image as:
 design-assets/ui-screens/[SCREEN_FILE_NAME].png
 
-Later Codex implementation reference:
-After this image is generated, attach it to a Codex implementation prompt and ask Codex to implement the screen exactly. Codex should use:
+Later AI-assisted implementation reference:
+After this image is generated, attach it to an implementation prompt and ask the coding assistant to implement the screen exactly. The coding assistant should use:
 - AGENTS.md
 - docs/ui-style-guide.md
 - docs/visual-direction.md

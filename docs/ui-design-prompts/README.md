@@ -2,7 +2,7 @@
 
 This folder contains chat-ready image generation prompts for creating high-fidelity mobile UI reference images for Neo before app screens are coded.
 
-These images are planning artifacts. They should be saved in `design-assets/ui-screens/` and used later as visual references for Codex implementation prompts. They are not runtime app assets and should not be shipped inside the Expo app.
+These images are planning artifacts. They should be saved in `design-assets/ui-screens/` and used later as visual references for implementation prompts. They are not runtime app assets and should not be shipped inside the Expo app.
 
 ## Workflow
 
@@ -14,7 +14,7 @@ These images are planning artifacts. They should be saved in `design-assets/ui-s
 6. Generate one UI image per screen using the master style reference as an attached reference image.
 7. Save each generated screen image into `design-assets/ui-screens/`.
 8. Update `docs/ui-design-prompts/screen-prompt-index.md` from `Not generated` to `Generated` as each image is created.
-9. Later, after `AGENTS.md` and the Expo app are ready, attach each generated UI image to Codex when implementing that screen.
+9. Later, after `AGENTS.md` and the Expo app are ready, attach each generated UI image to the coding assistant when implementing that screen.
 
 ## Prompt Pack Contents
 
@@ -34,9 +34,9 @@ For screen prompts, attach or reference `design-assets/ui-screens/master-ui-styl
 
 - Runtime app assets such as logos, mascots, icons, empty-state illustrations, splash images, and screen illustrations belong in `assets/images/` or `assets/icons/`.
 - UI design reference screenshots belong in `design-assets/ui-screens/`.
-- UI design reference screenshots are not imported by the app. They are attached to later Codex prompts so implementation can match the intended screen composition.
+- UI design reference screenshots are not imported by the app. They are attached to later implementation prompts so implementation can match the intended screen composition.
 
-## Later Codex Implementation Flow
+## Later AI-Assisted Implementation Flow
 
 When implementing a screen later, attach the generated UI reference image and include:
 

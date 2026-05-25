@@ -1,15 +1,15 @@
 # Local State And Persistence Refinements Implementation Prompt
 
-## Direct Codex Execution
+## Direct Assistant Execution
 
-This file is the complete implementation request. If this file is provided to Codex by itself, treat it as an active coding task, not as documentation to summarize. Start by reading `AGENTS.md`, then verify every required reference listed below. If all required references exist, implement only the feature named in this file. If any required reference is missing, stop and report exactly what is missing. Do not ask for another prompt, do not broaden the task, and do not implement anything outside this file.
+This file is the complete implementation request. If this file is provided to the coding assistant by itself, treat it as an active coding task, not as documentation to summarize. Start by reading `AGENTS.md`, then verify every required reference listed below. If all required references exist, implement only the feature named in this file. If any required reference is missing, stop and report exactly what is missing. Do not ask for another prompt, do not broaden the task, and do not implement anything outside this file.
 
 
 ## When to run this prompt
 
 Run this after setup screens, draft/edit flows, and settings exist. Run only if Zustand and AsyncStorage are installed/configured or if the prompt can complete with existing project utilities.
 
-## Codex prompt
+## Implementation prompt
 
 Read AGENTS.md first and follow it strictly.
 

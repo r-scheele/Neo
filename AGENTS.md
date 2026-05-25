@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Read this file before every feature, fix, refactor, setup task, or review in this repository. Treat it as the source of truth for future Codex work on Neo.
+Read this file before every feature, fix, refactor, setup task, or review in this repository. Treat it as the source of truth for future AI-assisted work on Neo.
 
 ## Role
 
