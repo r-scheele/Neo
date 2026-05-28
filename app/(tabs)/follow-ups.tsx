@@ -1,5 +1,10 @@
-import { PlaceholderScreen } from "@/components/layout/PlaceholderScreen";
+import { useLocalSearchParams } from "expo-router";
+
+import { getMockScreenState } from "@/components/feedback/ScreenState";
+import { FollowUpsScreen } from "@/features/follow-ups/FollowUpsScreen";
 
 export default function FollowUpsRoute() {
-  return <PlaceholderScreen title="Follow-ups" />;
+  const { state } = useLocalSearchParams<{ state?: string | string[] }>();
+
+  return <FollowUpsScreen initialState={getMockScreenState(state)} />;
 }
