@@ -5,7 +5,9 @@ import { useRouter } from "expo-router";
 import { colors } from "@/constants/colors";
 import { images } from "@/constants/images";
 import { routes } from "@/constants/routes";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 import { Link, Pressable, ScrollView, Text, TextInput, View } from "@/src/tw";
+import { useSetupStore } from "@/stores/useSetupStore";
 
 type DeliveryZoneStatus = "default" | "active";
 
@@ -262,6 +264,8 @@ export function DeliveryZonesScreen() {
   const { height, width } = useWindowDimensions();
   const isCompactPhone = height < 760 || width < 380;
   const horizontalPadding = width >= 390 ? 20 : 16;
+  const setDeliveryZoneCount = useSetupStore((store) => store.setDeliveryZoneCount);
+  const markStepComplete = useSetupStore((store) => store.markStepComplete);
   const [zones, setZones] = useState<readonly DeliveryZone[]>(initialZones);
   const [form, setForm] = useState<DeliveryZoneForm>(emptyForm);
   const [errors, setErrors] = useState<DeliveryZoneErrors>({});
@@ -361,6 +365,11 @@ export function DeliveryZonesScreen() {
     }
 
     setIsSubmitting(true);
+    setDeliveryZoneCount(zones.length);
+    markStepComplete("delivery-zones");
+    trackAnalyticsEvent("setup_step_completed", {
+      step_id: "delivery-zones",
+    });
     router.push(routes.setup);
   };
 
@@ -378,18 +387,22 @@ export function DeliveryZonesScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View className="w-full max-w-[430px]">
-        <View className="flex-row items-start gap-3">
-          <Link asChild href={routes.setup}>
-            <Pressable
-              accessibilityLabel="Back to setup checklist"
-              accessibilityRole="link"
-              className="min-h-11 w-11 items-start justify-center"
-            >
-              <Text className="text-[34px] leading-9 text-neo-text">{"<"}</Text>
-            </Pressable>
-          </Link>
+        <View>
+          <View className="flex-row items-center justify-between gap-3">
+            <Link asChild href={routes.setup}>
+              <Pressable
+                accessibilityLabel="Back to setup checklist"
+                accessibilityRole="link"
+                className="min-h-11 w-11 items-start justify-center"
+              >
+                <Text className="text-[34px] leading-9 text-neo-text">{"<"}</Text>
+              </Pressable>
+            </Link>
 
-          <View className="flex-1 items-center">
+            <StepChip />
+          </View>
+
+          <View className="mt-5 items-center px-2">
             <Text className="text-center text-[26px] font-bold leading-8 text-neo-text">
               Delivery zones
             </Text>
@@ -398,8 +411,6 @@ export function DeliveryZonesScreen() {
               details.
             </Text>
           </View>
-
-          <StepChip />
         </View>
 
         <View className="mt-7 rounded-lg border border-neo-border bg-neo-surface px-4 py-5">

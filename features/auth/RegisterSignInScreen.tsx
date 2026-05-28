@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ImageSourcePropType } from "react-native";
 import { Image, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
+import { useAuth, useSignIn, useSignUp } from "@clerk/clerk-expo";
 
 import { colors } from "@/constants/colors";
 import { images } from "@/constants/images";
 import { routes } from "@/constants/routes";
+import { trackAnalyticsEvent } from "@/lib/analytics";
+import { getClerkErrorMessage } from "@/lib/auth/clerk";
 import { Link, Pressable, ScrollView, Text, TextInput, View } from "@/src/tw";
 
 type AuthMode = "sign-in" | "create-account";
-type CredentialMode = "email-or-phone" | "phone";
 
 type SecurityPoint = {
   title: string;
@@ -41,64 +43,228 @@ function getAuthCopy(mode: AuthMode) {
   };
 }
 
-function getCredentialCopy(mode: CredentialMode) {
-  if (mode === "phone") {
-    return {
-      label: "Phone number",
-      placeholder: "0801 234 5678",
-      helper: "When auth is connected, Neo will send a secure code to this number.",
-      toggle: "Use email instead",
-      keyboardType: "phone-pad" as const,
-    };
-  }
-
+function getCredentialCopy(mode: AuthMode) {
   return {
-    label: "Email or phone number",
-    placeholder: "Email or 0801 234 5678",
-    helper: "When auth is connected, Neo will send a secure code. For now, Continue opens setup.",
-    toggle: "Use phone number instead",
+    label: "Email address",
+    placeholder: "owner@example.com",
+    helper:
+      mode === "create-account"
+        ? "Create an account with the email/password method enabled in Clerk."
+        : "Sign in with your Clerk test account email and password.",
     keyboardType: "email-address" as const,
   };
 }
 
 export function RegisterSignInScreen() {
   const router = useRouter();
+  const { isLoaded: isAuthStateLoaded, isSignedIn } = useAuth();
+  const {
+    isLoaded: isSignInLoaded,
+    setActive: setSignInActive,
+    signIn,
+  } = useSignIn();
+  const {
+    isLoaded: isSignUpLoaded,
+    setActive: setSignUpActive,
+    signUp,
+  } = useSignUp();
   const { height, width } = useWindowDimensions();
   const isCompactPhone = height < 760 || width < 380;
   const horizontalPadding = width >= 390 ? 20 : 16;
   const [authMode, setAuthMode] = useState<AuthMode>("sign-in");
-  const [credentialMode, setCredentialMode] =
-    useState<CredentialMode>("email-or-phone");
-  const [credential, setCredential] = useState("");
+  const [emailAddress, setEmailAddress] = useState("");
+  const [password, setPassword] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [isPendingVerification, setIsPendingVerification] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const authCopy = getAuthCopy(authMode);
-  const credentialCopy = getCredentialCopy(credentialMode);
+  const credentialCopy = getCredentialCopy(authMode);
+  const isClerkLoaded = isAuthStateLoaded && isSignInLoaded && isSignUpLoaded;
+
+  useEffect(() => {
+    if (isAuthStateLoaded && isSignedIn) {
+      router.replace(routes.setup);
+    }
+  }, [isAuthStateLoaded, isSignedIn, router]);
 
   const handleCredentialChange = (value: string) => {
-    setCredential(value);
+    setEmailAddress(value);
     if (error) {
       setError(null);
     }
   };
 
-  const handleContinue = () => {
-    const trimmedCredential = credential.trim();
+  const activateSession = async (
+    createdSessionId: string | null,
+    setActive: NonNullable<typeof setSignInActive>,
+  ) => {
+    if (!createdSessionId) {
+      setError("Clerk needs one more verification step before opening setup.");
+      return;
+    }
 
-    if (!trimmedCredential) {
+    await setActive({ session: createdSessionId });
+    trackAnalyticsEvent("onboarding_started", {
+      entry_point: authMode,
+    });
+    router.replace(routes.setup);
+  };
+
+  const validateCredentials = () => {
+    const trimmedEmailAddress = emailAddress.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedEmailAddress) {
       setError(`Enter your ${credentialCopy.label.toLowerCase()} to continue.`);
+      return null;
+    }
+
+    if (!trimmedPassword) {
+      setError("Enter your password to continue.");
+      return null;
+    }
+
+    return {
+      emailAddress: trimmedEmailAddress,
+      password: trimmedPassword,
+    };
+  };
+
+  const handleSignIn = async () => {
+    const credentials = validateCredentials();
+
+    if (!credentials || !signIn || !setSignInActive) {
       return;
     }
 
     setIsSubmitting(true);
-    router.push(routes.setup);
+    setNotice(null);
+
+    try {
+      const signInAttempt = await signIn.create({
+        identifier: credentials.emailAddress,
+        password: credentials.password,
+        strategy: "password",
+      });
+
+      if (signInAttempt.status === "complete") {
+        await activateSession(signInAttempt.createdSessionId, setSignInActive);
+        return;
+      }
+
+      setError("This account needs an extra verification step before setup opens.");
+    } catch (signInError) {
+      setError(
+        getClerkErrorMessage(
+          signInError,
+          "Neo could not sign you in. Check the details and try again.",
+        ),
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleCredentialModeToggle = () => {
-    setCredentialMode((currentMode) =>
-      currentMode === "phone" ? "email-or-phone" : "phone",
-    );
+  const handleCreateAccount = async () => {
+    const credentials = validateCredentials();
+
+    if (!credentials || !signUp || !setSignUpActive) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setNotice(null);
+
+    try {
+      const signUpAttempt = await signUp.create({
+        emailAddress: credentials.emailAddress,
+        password: credentials.password,
+      });
+
+      if (signUpAttempt.status === "complete") {
+        await activateSession(signUpAttempt.createdSessionId, setSignUpActive);
+        return;
+      }
+
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      setIsPendingVerification(true);
+      setNotice("Clerk sent a verification code to your email.");
+    } catch (signUpError) {
+      setError(
+        getClerkErrorMessage(
+          signUpError,
+          "Neo could not create this account. Check the details and try again.",
+        ),
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyAccount = async () => {
+    const trimmedCode = verificationCode.trim();
+
+    if (!trimmedCode) {
+      setError("Enter the email verification code from Clerk.");
+      return;
+    }
+
+    if (!signUp || !setSignUpActive) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setNotice(null);
+
+    try {
+      const signUpAttempt = await signUp.attemptEmailAddressVerification({
+        code: trimmedCode,
+      });
+
+      if (signUpAttempt.status === "complete") {
+        await activateSession(signUpAttempt.createdSessionId, setSignUpActive);
+        return;
+      }
+
+      setError("Clerk has not completed verification for this account yet.");
+    } catch (verificationError) {
+      setError(
+        getClerkErrorMessage(
+          verificationError,
+          "Neo could not verify that code. Check it and try again.",
+        ),
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleContinue = () => {
+    if (!isClerkLoaded || isSubmitting) {
+      return;
+    }
+
+    if (isPendingVerification) {
+      void handleVerifyAccount();
+      return;
+    }
+
+    if (authMode === "create-account") {
+      void handleCreateAccount();
+      return;
+    }
+
+    void handleSignIn();
+  };
+
+  const handleAuthModeChange = (nextMode: AuthMode) => {
+    setAuthMode(nextMode);
+    setIsPendingVerification(false);
+    setVerificationCode("");
+    setNotice(null);
     setError(null);
   };
 
@@ -162,7 +328,7 @@ export function RegisterSignInScreen() {
                 ? "border-neo-primary bg-neo-surface"
                 : "border-transparent bg-neo-background"
             }`}
-            onPress={() => setAuthMode("sign-in")}
+            onPress={() => handleAuthModeChange("sign-in")}
           >
             <Text
               className={`text-[17px] font-bold leading-6 ${
@@ -181,7 +347,7 @@ export function RegisterSignInScreen() {
                 ? "border-neo-primary bg-neo-surface"
                 : "border-transparent bg-neo-background"
             }`}
-            onPress={() => setAuthMode("create-account")}
+            onPress={() => handleAuthModeChange("create-account")}
           >
             <Text
               className={`text-[17px] font-bold leading-6 ${
@@ -215,15 +381,86 @@ export function RegisterSignInScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               className="min-h-12 flex-1 text-[16px] leading-6 text-neo-text"
-              inputMode={credentialMode === "phone" ? "tel" : "email"}
+              inputMode="email"
               keyboardType={credentialCopy.keyboardType}
               onChangeText={handleCredentialChange}
               placeholder={credentialCopy.placeholder}
               placeholderTextColor={colors.textMuted}
-              returnKeyType="done"
-              value={credential}
+              returnKeyType="next"
+              textContentType="emailAddress"
+              value={emailAddress}
             />
           </View>
+        </View>
+
+        <View className="mt-5">
+          <Text className="text-[16px] font-bold leading-6 text-neo-text">
+            Password
+          </Text>
+          <View
+            className={`mt-3 min-h-16 flex-row items-center gap-3 rounded-lg border bg-neo-surface px-4 ${
+              error ? "border-neo-error" : "border-neo-border"
+            }`}
+          >
+            <Image
+              accessibilityIgnoresInvertColors
+              resizeMode="contain"
+              source={images.iconPermission}
+              style={{ height: 28, width: 28 }}
+            />
+            <TextInput
+              accessibilityLabel="Password"
+              autoCapitalize="none"
+              autoCorrect={false}
+              className="min-h-12 flex-1 text-[16px] leading-6 text-neo-text"
+              onChangeText={(value) => {
+                setPassword(value);
+                setError(null);
+              }}
+              placeholder="Password"
+              placeholderTextColor={colors.textMuted}
+              returnKeyType="done"
+              secureTextEntry
+              textContentType="password"
+              value={password}
+            />
+          </View>
+          {isPendingVerification ? (
+            <View className="mt-5">
+              <Text className="text-[16px] font-bold leading-6 text-neo-text">
+                Email verification code
+              </Text>
+              <View
+                className={`mt-3 min-h-16 flex-row items-center gap-3 rounded-lg border bg-neo-surface px-4 ${
+                  error ? "border-neo-error" : "border-neo-border"
+                }`}
+              >
+                <Image
+                  accessibilityIgnoresInvertColors
+                  resizeMode="contain"
+                  source={images.iconPaid}
+                  style={{ height: 28, width: 28 }}
+                />
+                <TextInput
+                  accessibilityLabel="Email verification code"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  className="min-h-12 flex-1 text-[16px] leading-6 text-neo-text"
+                  inputMode="numeric"
+                  keyboardType="number-pad"
+                  onChangeText={(value) => {
+                    setVerificationCode(value);
+                    setError(null);
+                  }}
+                  placeholder="6-digit code"
+                  placeholderTextColor={colors.textMuted}
+                  returnKeyType="done"
+                  textContentType="oneTimeCode"
+                  value={verificationCode}
+                />
+              </View>
+            </View>
+          ) : null}
           {error ? (
             <Text
               accessibilityRole="alert"
@@ -233,7 +470,7 @@ export function RegisterSignInScreen() {
             </Text>
           ) : (
             <Text className="mt-2 text-[14px] leading-5 text-neo-text-muted">
-              {credentialCopy.helper}
+              {notice ?? credentialCopy.helper}
             </Text>
           )}
         </View>
@@ -241,13 +478,17 @@ export function RegisterSignInScreen() {
         <Pressable
           accessibilityLabel={authCopy.action}
           accessibilityRole="button"
-          accessibilityState={{ busy: isSubmitting }}
+          accessibilityState={{ busy: isSubmitting, disabled: !isClerkLoaded }}
           className="mt-7 min-h-14 w-full flex-row items-center justify-center gap-3 rounded-lg bg-neo-primary px-5"
-          disabled={isSubmitting}
+          disabled={!isClerkLoaded || isSubmitting}
           onPress={handleContinue}
         >
           <Text className="text-[18px] font-bold leading-6 text-neo-surface">
-            {isSubmitting ? "Opening setup" : authCopy.action}
+            {isSubmitting
+              ? "Securing access"
+              : isPendingVerification
+                ? "Verify account"
+                : authCopy.action}
           </Text>
           <Text className="text-[24px] leading-7 text-neo-surface">{"->"}</Text>
         </Pressable>
@@ -255,30 +496,24 @@ export function RegisterSignInScreen() {
         <View className="my-6 flex-row items-center gap-4">
           <View className="h-px flex-1 bg-neo-border" />
           <Text className="text-[14px] leading-5 text-neo-text-muted">
-            or continue with
+            protected by Clerk
           </Text>
           <View className="h-px flex-1 bg-neo-border" />
         </View>
 
-        <Pressable
-          accessibilityLabel={credentialCopy.toggle}
-          accessibilityRole="button"
-          className="min-h-14 flex-row items-center rounded-lg border border-neo-border bg-neo-surface px-4"
-          onPress={handleCredentialModeToggle}
-        >
+        <View className="min-h-14 flex-row items-center rounded-lg border border-neo-border bg-neo-surface px-4">
           <View className="h-10 w-10 items-center justify-center rounded-full border border-neo-border bg-neo-surface">
             <Image
               accessibilityIgnoresInvertColors
               resizeMode="contain"
-              source={credentialMode === "phone" ? images.iconInbox : images.iconCustomer}
+              source={images.iconCustomer}
               style={{ height: 24, width: 24 }}
             />
           </View>
           <Text className="ml-4 flex-1 text-[16px] font-bold leading-6 text-neo-text">
-            {credentialCopy.toggle}
+            Email/password auth is active for this pass
           </Text>
-          <Text className="text-[24px] leading-7 text-neo-text">{">"}</Text>
-        </Pressable>
+        </View>
 
         <View className="mt-7 flex-row items-center gap-4 rounded-lg border border-neo-border bg-neo-surface p-4">
           <View className="h-16 w-16 items-center justify-center rounded-lg bg-neo-surface-alt">

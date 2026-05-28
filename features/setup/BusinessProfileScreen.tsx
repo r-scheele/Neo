@@ -6,7 +6,9 @@ import { useRouter } from "expo-router";
 import { colors } from "@/constants/colors";
 import { images } from "@/constants/images";
 import { routes } from "@/constants/routes";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 import { Link, Pressable, ScrollView, Text, TextInput, View } from "@/src/tw";
+import { useSetupStore } from "@/stores/useSetupStore";
 
 type BusinessProfileForm = {
   businessName: string;
@@ -142,10 +144,22 @@ export function BusinessProfileScreen() {
   const { height, width } = useWindowDimensions();
   const isCompactPhone = height < 760 || width < 380;
   const horizontalPadding = width >= 390 ? 20 : 16;
-  const [form, setForm] = useState<BusinessProfileForm>(emptyForm);
+  const savedDraft = useSetupStore((store) => store.businessProfileDraft);
+  const setBusinessProfileDraft = useSetupStore(
+    (store) => store.setBusinessProfileDraft,
+  );
+  const markStepComplete = useSetupStore((store) => store.markStepComplete);
+  const [formOverrides, setFormOverrides] = useState<Partial<BusinessProfileForm>>(
+    {},
+  );
   const [errors, setErrors] = useState<BusinessProfileErrors>({});
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const form: BusinessProfileForm = {
+    ...emptyForm,
+    ...savedDraft,
+    ...formOverrides,
+  };
 
   const previewName = form.businessName.trim() || "Your business name";
   const previewCity = form.cityArea.trim() || "City / area";
@@ -154,7 +168,10 @@ export function BusinessProfileScreen() {
   const hasErrors = useMemo(() => Object.keys(errors).length > 0, [errors]);
 
   const updateField = (field: keyof BusinessProfileForm, value: string) => {
-    setForm((currentForm) => ({ ...currentForm, [field]: value }));
+    setFormOverrides((currentFormOverrides) => ({
+      ...currentFormOverrides,
+      [field]: value,
+    }));
     if (errors[field]) {
       setErrors((currentErrors) => {
         const nextErrors = { ...currentErrors };
@@ -178,6 +195,16 @@ export function BusinessProfileScreen() {
     }
 
     setIsSubmitting(true);
+    setBusinessProfileDraft({
+      businessCategory: form.businessCategory,
+      businessName: form.businessName.trim(),
+      cityArea: form.cityArea.trim(),
+    });
+    markStepComplete("business-profile");
+    trackAnalyticsEvent("setup_step_completed", {
+      business_type: form.businessCategory,
+      step_id: "business-profile",
+    });
     router.push(routes.setup);
   };
 

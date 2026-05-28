@@ -1,5 +1,5 @@
-import { Redirect } from "expo-router";
+import { RootRouteRedirect } from "@/lib/auth/navigation";
 
 export default function IndexRoute() {
-  return <Redirect href="/(auth)/welcome" />;
+  return <RootRouteRedirect />;
 }

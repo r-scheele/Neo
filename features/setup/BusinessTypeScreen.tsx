@@ -5,17 +5,10 @@ import { useRouter } from "expo-router";
 
 import { images } from "@/constants/images";
 import { routes } from "@/constants/routes";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 import { Link, Pressable, ScrollView, Text, View } from "@/src/tw";
-
-type BusinessTypeId =
-  | "fashion"
-  | "tailor"
-  | "food"
-  | "logistics"
-  | "real-estate"
-  | "beauty-hair"
-  | "services"
-  | "other";
+import type { BusinessTypeId } from "@/stores/useSetupStore";
+import { useSetupStore } from "@/stores/useSetupStore";
 
 type BusinessTypeOption = {
   id: BusinessTypeId;
@@ -71,14 +64,14 @@ const businessTypeOptions: readonly BusinessTypeOption[] = [
   {
     id: "other",
     title: "Other",
-    description: "Something else? We have got you",
+    description: "Something else? We've got you",
     iconText: "...",
   },
 ];
 
 function getOptionContainerClassName(isSelected: boolean) {
   if (isSelected) {
-    return "border-neo-primary bg-[#F7FAF4]";
+    return "border-2 border-neo-primary bg-[#F9F8F1]";
   }
 
   return "border-neo-border bg-neo-surface";
@@ -122,7 +115,7 @@ function BusinessTypeTile({
 
         {isSelected ? (
           <View className="h-8 w-8 items-center justify-center rounded-full bg-neo-primary">
-            <Text className="text-[11px] font-bold leading-4 text-neo-surface">
+            <Text className="text-[10px] font-bold leading-3 text-neo-surface">
               OK
             </Text>
           </View>
@@ -144,14 +137,19 @@ export function BusinessTypeScreen() {
   const { height, width } = useWindowDimensions();
   const isCompactPhone = height < 760 || width < 380;
   const horizontalPadding = width >= 390 ? 20 : 16;
-  const [selectedTypeId, setSelectedTypeId] = useState<BusinessTypeId | null>(
-    "fashion",
-  );
+  const savedBusinessType = useSetupStore((store) => store.businessType);
+  const setBusinessType = useSetupStore((store) => store.setBusinessType);
+  const markStepComplete = useSetupStore((store) => store.markStepComplete);
+  const [selectedTypeOverride, setSelectedTypeOverride] = useState<
+    BusinessTypeId | undefined
+  >(undefined);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const selectedTypeId =
+    selectedTypeOverride === undefined ? savedBusinessType : selectedTypeOverride;
 
   const handleSelect = (id: BusinessTypeId) => {
-    setSelectedTypeId((currentId) => (currentId === id ? null : id));
+    setSelectedTypeOverride(id);
     setError(null);
   };
 
@@ -162,6 +160,12 @@ export function BusinessTypeScreen() {
     }
 
     setIsSubmitting(true);
+    setBusinessType(selectedTypeId);
+    markStepComplete("business-type");
+    trackAnalyticsEvent("setup_step_completed", {
+      business_type: selectedTypeId,
+      step_id: "business-type",
+    });
     router.push(routes.setup);
   };
 
