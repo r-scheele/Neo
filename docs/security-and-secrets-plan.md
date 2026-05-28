@@ -1,6 +1,6 @@
 # Security And Secrets Plan
 
-Status: Draft security and secrets plan. No environment files or app code have been created.
+Status: Current security and secrets plan for the local MVP prototype. App code and `.env.example` exist; production service secrets remain outside the Expo client.
 
 ## Core Rule
 
@@ -14,6 +14,9 @@ Do not put private API keys, provider secrets, WhatsApp tokens, AI provider keys
 | --- | --- | --- |
 | Clerk publishable key | Yes, as public env | Must use provider-approved public key only |
 | Clerk secret key | No | Server/build environment only |
+| Supabase URL | Yes, as public env | Public project URL only |
+| Supabase anon key | Yes, as public env | Public anon key only; service role key is forbidden in Expo |
+| API base URL | Yes, as public env | Public Supabase Edge Functions URL only |
 | PostHog project key | Yes, as public env if approved | Still avoid sensitive event properties |
 | AI provider API key | No | Requires backend boundary |
 | WhatsApp access token | No | Requires backend boundary |
@@ -24,15 +27,18 @@ Do not put private API keys, provider secrets, WhatsApp tokens, AI provider keys
 
 ## Environment Variables
 
-When the app is scaffolded, use public Expo variables only for values safe to expose:
+Use public Expo variables only for values safe to expose:
 
 ```text
 EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=
+EXPO_PUBLIC_SUPABASE_URL=
+EXPO_PUBLIC_SUPABASE_ANON_KEY=
+EXPO_PUBLIC_API_BASE_URL=
 EXPO_PUBLIC_POSTHOG_KEY=
 EXPO_PUBLIC_POSTHOG_HOST=
 ```
 
-Do not create `.env` in this planning step. When setup begins, create `.env.example` with variable names only and keep real `.env` files uncommitted.
+`.env.example` contains these variable names only. Keep real `.env` files uncommitted and do not add private service keys to the Expo client.
 
 ## Data Classification
 
@@ -90,6 +96,7 @@ Errors should use safe categories such as `network_error`, `auth_error`, `receip
 
 - Use HTTPS for network requests.
 - Validate external responses before rendering.
+- Use `lib/api/` for backend calls after B02.
 - Handle failed network calls calmly.
 - Do not trust client-only authorization for sensitive actions.
 - Disable risky actions while offline.
@@ -110,4 +117,3 @@ Before production pilot:
 ## Done Looks Like
 
 Security is acceptable for the next phase when `AGENTS.md` can clearly tell future coding agents where secrets may live, what must remain server-side, and what data must never be stored or tracked in the client.
-

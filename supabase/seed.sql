@@ -1,0 +1,3 @@
+-- Neo seed file.
+-- Keep empty until a reviewed local seed set is approved.
+-- Do not place secrets, real customer data, receipt images, phone numbers, or private message text here.
