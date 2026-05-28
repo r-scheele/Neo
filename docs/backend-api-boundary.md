@@ -1,6 +1,6 @@
 # Backend API Boundary
 
-Date: 2026-05-28
+Date: 2026-05-27
 
 ## Decision Summary
 
@@ -21,15 +21,17 @@ The backend foundation is now selected and linked:
 - Edge Functions API base URL pattern: `https://xtalfjnmxnwtogxgtlxn.supabase.co/functions/v1`
 - Public API base URL env var: `EXPO_PUBLIC_API_BASE_URL`
 
-B01 linked and scaffolded Supabase. B02 added the typed client API boundary. B03 validated the local schema. B04 added local Clerk JWT verification plus profile/setup-business bootstrap functions. B05 added commerce records sync. B06 added server-side permissions and audit writes for current commerce/approval mutations and deployed the changed Edge Functions to Supabase. These foundation passes still do not implement WhatsApp, AI, OCR, or payment-provider workflows.
+B01 linked and scaffolded Supabase. B02 added the typed client API boundary. B03 validated the local schema. B04 added local Clerk JWT verification plus profile/setup-business bootstrap functions. These foundation passes do not replace fixture data or implement backend feature workflows.
 
 ## Non-Goals For This Pass
 
-- No real WhatsApp sync, webhook handling, or send calls.
+- No real WhatsApp sync or send calls.
+- No WhatsApp webhook handling in the Expo app.
 - No AI draft generation calls from the client.
 - No receipt OCR or extraction calls from the client.
 - No payment verification or bank lookup from the client.
-- No signed-in B06 audit QA confirmation yet.
+- No completed server-side role enforcement implementation.
+- B06 audit log writes exist for current sensitive commerce endpoints; transaction-atomic mutation/audit hardening remains before launch.
 - No new packages.
 
 ## Decisions Now Approved
@@ -54,7 +56,7 @@ These implementation decisions remain before feature-complete backend work:
 
 - Storage bucket creation and policies.
 - Supabase secrets values for `CLERK_SECRET_KEY`, OpenAI, Meta WhatsApp, and PostHog.
-- Feature endpoint implementation for B07-B08. B05 commerce endpoints are implemented and deployed. B06 permissions/audit functions are deployed and still need signed-in Clerk QA to confirm role behavior and audit rows.
+- Feature endpoint implementation for B07-B08. B05 commerce endpoints and B06 permissions/audit handling are implemented for current sensitive commerce endpoints.
 
 ## Secrets Boundary
 

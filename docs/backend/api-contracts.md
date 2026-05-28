@@ -2,7 +2,7 @@
 
 Date: 2026-05-28
 
-Status: approved response envelope; B02 client parser exists; B04 auth bootstrap endpoints exist; B05 commerce endpoints and B06 permissions/audit mutations are implemented and deployed.
+Status: approved response envelope; B02 client parser exists; B04 auth bootstrap endpoints exist; B05 commerce endpoints are implemented and deployed; B06 permissions/audit handling is implemented for current sensitive commerce endpoints.
 
 Base URL env var:
 
@@ -61,8 +61,30 @@ Implemented:
 - `customers`: customer profile, customer list, and safe customer creation.
 - `receipts`: receipt review detail/list and human receipt review decision updates.
 - `follow-ups`: follow-up queue/list, complete, and reschedule actions.
+- `approvals`: list safe approval records and record owner/manager approval decisions.
 
 Other function folders return safe deferred errors until their matching Phase B prompt is implemented.
+
+## B06 Permissions And Audit Behavior
+
+All sensitive writes derive the actor, active business membership, and role from the Clerk-authenticated backend context. Client-sent roles, route params, actor ids, business ids, and audit metadata are not trusted.
+
+Denied sensitive writes return `PERMISSION_DENIED` with safe details containing `requiredPermission` and `role`; they do not mutate the target record and attempt to write `permission.denied` with safe metadata.
+
+Allowed sensitive writes write the matching audit event before returning success. Current B06 coverage includes:
+
+- `order.created`
+- `order.cancelled`
+- `order.delivery_status_updated`
+- `payment.status_updated`
+- `receipt.review_decision_recorded`
+- `follow_up.completed`
+- `follow_up.rescheduled`
+- `approval.decision_recorded`
+
+Audit metadata is restricted to safe fields such as permission, actor role, previous/next status, decision, result, amount band, and endpoint. It must not include raw message text, receipt images, media URLs, bank alerts, phone numbers, exact addresses, provider tokens, prompts, or draft text.
+
+Residual launch-hardening risk: current Edge Functions perform mutation and audit insert as separate PostgREST requests in the same trusted server flow. If audit insert fails, the function returns `AUDIT_WRITE_FAILED`, but the mutation may already have reached Postgres. Convert high-risk writes to transaction-safe database functions/RPC before launch.
 
 ## Auth Bootstrap Responses
 
@@ -159,6 +181,48 @@ Allowed payment status values:
 
 B05 may map these to existing client labels. It must not mark screenshots as paid without a human review decision.
 
+`PATCH /orders/:orderId/cancel`
+
+Requires owner or manager. Updates the order status to `cancelled` and writes `order.cancelled`.
+
+`PATCH /orders/:orderId/delivery-status`
+
+Requires owner or manager. Accepts:
+
+```json
+{
+  "status": "delivered"
+}
+```
+
+Allowed statuses:
+
+- `not_started`
+- `scheduled`
+- `in_progress`
+- `delivered`
+
+Writes `order.delivery_status_updated`.
+
+`PATCH /orders/:orderId/payment-status`
+
+Requires owner or manager. Accepts:
+
+```json
+{
+  "status": "paid"
+}
+```
+
+Allowed statuses:
+
+- `unpaid`
+- `awaiting_receipt`
+- `receipt_review`
+- `paid`
+
+Writes `payment.status_updated`. It must not mark screenshot-only evidence as paid without a human review decision.
+
 ### Customers
 
 Function: `customers`
@@ -235,7 +299,7 @@ Allowed decisions:
 - `rejected_mismatch`
 - `unreadable`
 
-This endpoint must not auto-confirm payment from screenshot extraction alone. `approved_after_bank_check` requires a deliberate human review action. B06 enforces the receipt-review permission and writes `receipt.review_decision_recorded` according to `docs/backend/permissions-audit-contract.md`; signed-in QA is still required before release.
+This endpoint must not auto-confirm payment from screenshot extraction alone. `approved_after_bank_check` requires a deliberate human review action. B06 enforces the receipt-review permission and writes `receipt.review_decision_recorded` according to `docs/backend/permissions-audit-contract.md`.
 
 `GET /receipts?reviewStatus=&limit=&cursor=`
 
@@ -253,9 +317,13 @@ Returns follow-up queue items and counts for the active business.
 
 Marks a follow-up as completed after a human action. It may record a safe completion note but must not send WhatsApp messages in B05.
 
+B06 authorizes this through `follow_up.complete` and writes `follow_up.completed`.
+
 `PATCH /follow-ups/:followUpId/reschedule`
 
 Updates `dueAt` for a follow-up. It must validate that the date is future or intentionally overdue according to the requested status.
+
+B06 authorizes this through `follow_up.reschedule` and writes `follow_up.rescheduled`.
 
 Allowed statuses:
 
@@ -264,6 +332,35 @@ Allowed statuses:
 - `overdue`
 - `done`
 - `dismissed`
+
+### Approvals
+
+Function: `approvals`
+
+`GET /approvals?status=&limit=&cursor=`
+
+Returns safe approval records for the active business. It must not return AI draft text, prompt text, private message text, bank proof, or receipt media URLs.
+
+`PATCH /approvals/:approvalId/decision`
+
+Requires owner or manager. Accepts:
+
+```json
+{
+  "decision": "approved"
+}
+```
+
+Allowed decisions:
+
+- `approved`
+- `asked`
+- `edited`
+- `escalated`
+- `rejected`
+- `sent`
+
+Writes `approval.decision_recorded` with safe metadata only. The MVP endpoint records the approval decision; it does not send WhatsApp messages or AI draft text.
 
 ### Today Counts
 

@@ -44,8 +44,8 @@ Use these paths for local QA only:
 - Do not treat mock roles as trusted permissions.
 - Do not treat mock offline/error/loading states as real network or API states.
 - Do not move private messages, receipt images, bank alerts, payment proof, auth tokens, or provider credentials into Zustand or AsyncStorage.
-- Do not create `lib/api/` or add public API URL usage from local preview work.
+- Do not add new public API URL usage from local preview work.
 
 ## Backend Boundary
 
-Real WhatsApp sync, AI draft generation, receipt OCR, payment verification, server-side permissions, backend sync, and audit logs remain deferred until B04-B08 complete the approved Supabase backend sequence.
+B05-B06 now provide backend commerce sync and trusted permissions/audit handling for current sensitive commerce endpoints. Real WhatsApp sync, AI draft generation, receipt OCR, payment-provider verification, and remaining customer/team/settings workflows remain deferred until their approved backend prompts exist.

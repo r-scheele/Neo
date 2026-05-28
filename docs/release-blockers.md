@@ -1,8 +1,8 @@
 # Release Blockers
 
-Date: 2026-05-28
+Date: 2026-05-27
 
-Verdict: Neo is not ready for a client release candidate or a real backend-backed MVP release. The current implementation now includes Clerk wiring, protected route wiring, safe local persistence, current client state coverage, a linked Supabase backend foundation, B05 commerce records sync, and deployed B06 permissions/audit enforcement. WhatsApp, AI, OCR/payment-provider workflows, signed-in B06 audit QA, and full signed-in QA remain release blockers.
+Verdict: Neo is not ready for a client release candidate or a real backend-backed MVP release. The current implementation now includes Clerk wiring, protected route wiring, safe local persistence, current client state coverage, a linked Supabase backend foundation, B05 commerce records sync, and B06 server-side permissions/audit logging for current sensitive commerce endpoints. WhatsApp, AI, payment/OCR integrations, transaction-safe audit hardening, and full signed-in QA remain release blockers.
 
 ## Verification Snapshot
 
@@ -20,13 +20,13 @@ Verdict: Neo is not ready for a client release candidate or a real backend-backe
 | Severity | Blocker | Evidence | Required resolution | Owner integration |
 | --- | --- | --- | --- | --- |
 | P0 | Remaining backend feature workflows are not implemented | B01-B06 are complete, but WhatsApp, AI, OCR, and payment-provider verification are still deferred. | Continue through B07-B08 only when each prompt's prerequisites are ready. | Backend deferred B07-B08 |
-| P0 | B06 permissions/audit enforcement is not signed-in QA-confirmed | Remote Edge Functions are deployed, but owner/manager/staff writes and `audit_logs` rows still need verification with a real Clerk test user/business membership. | Verify allowed and denied writes plus required audit rows with a signed-in Clerk test user before release. | Backend permissions, audit logs |
-| P0 | Some staff role UI remains fixture/local | Approvals UI still uses local queue data and mock role params; receipt and order backend writes now rely on server denied-write responses for durable records. | Keep mock role params dev-only and replace approvals UI with backend data in its integration prompt. | Clerk auth and server-side permissions |
+| P0 | Audit writes are not transaction-atomic yet | B06 writes audits in the trusted Edge Function flow and returns `AUDIT_WRITE_FAILED` if audit insert fails, but mutation and audit are separate PostgREST calls. | Move high-risk sensitive mutations into transaction-safe database functions/RPC before launch hardening. | Backend launch hardening |
+| P0 | Staff roles still need live QA against backend memberships | Mock `role` query params are dev-only visual preview; production writes use backend membership roles, but owner/manager/staff live cases are not manually recorded yet. | Run signed-in QA with owner, manager, and staff memberships. | Clerk auth and server-side permissions |
 | P0 | WhatsApp connection and messaging are mocked | WhatsApp setup uses local status; inbox/conversation/follow-ups use fixture data and local send notices. | Integrate WhatsApp through backend; keep tokens and webhooks server-side. | WhatsApp workflow integration |
 | P0 | AI draft generation is not real | Drafts are fixtures/local text; approvals mutate local UI only. | Generate drafts through backend with guardrails and approval routing. | AI backend integration |
 | P1 | Local-only preview controls must stay dev-only | `?state=` and `?role=` params are now gated behind development-only helpers and documented in `docs/local-preview-controls.md`. | Keep this boundary in place until real backend state and trusted roles replace it. | Release readiness cleanup |
 | P1 | Full signed-in manual QA baseline is not recorded | `docs/manual-qa-results-2026-05-27.md` records local preflight and route smoke, but a signed-in Clerk test-account run has not been recorded. | Complete and record the signed-in manual QA baseline before release candidate work. | Release readiness cleanup |
-| P1 | Some operations state is still fixture-backed | Today and Follow-ups now have backend commerce sync, but Approvals UI, Inbox, and Conversation data still depend on fixtures until WhatsApp/AI/approval UI prompts run. | Keep fixture behavior honest and replace remaining workflows in B07-B08 and later UI integration passes. | Backend deferred B07-B08 |
+| P1 | Some operations state is still fixture-backed | Today and Follow-ups now have backend commerce sync, but Inbox, Conversation, and AI-generated approval context still depend on fixtures until WhatsApp/AI prompts run. | Keep fixture behavior honest and replace remaining workflows in B07-B08. | Backend deferred B07-B08 |
 | P1 | Analytics is only partially configured | PostHog package/provider/events exist but real env values and Clerk identify/reset behavior are not validated. | Configure production public env values and privacy QA. | PostHog analytics |
 | P1 | No automated test suite exists | `package.json` has no test script; Prompt 11 added a manual QA baseline because Maestro was unavailable. | Decide whether MVP needs automated tests before release; keep typecheck/lint and execute the manual QA baseline until an E2E tool is approved. | Release readiness cleanup |
 | P2 | Some feature components are very large | Several screens exceed 900 lines. | Keep stable during integration; split only when needed for safe ownership or testing. | Release cleanup or targeted refactor later |

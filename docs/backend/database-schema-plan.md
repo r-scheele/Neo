@@ -33,7 +33,7 @@ Migrations:
 - `created_at` and `updated_at` where useful.
 - `business_id` on tenant-owned tables.
 - Indexes for `business_id`, common foreign keys, status, due dates, and lookup fields.
-- RLS enabled with policies deferred until B06 implements server-side permissions and audit logs.
+- RLS enabled with policies still deferred; B06 currently enforces server-side permissions and audit logs in Edge Functions for current sensitive commerce endpoints.
 - No raw receipt images, bank alerts, provider secrets, or webhook secrets in normal application tables.
 
 ## B03 Readiness Result

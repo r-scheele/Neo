@@ -2,9 +2,9 @@
 
 Date: 2026-05-28
 
-Status: approved for B06 implementation.
+Status: approved and implemented for current B06 sensitive commerce endpoints.
 
-This document defines the MVP role model, server-side permission rules, and audit events required before running B06 server-side permissions and audit logs.
+This document defines the MVP role model, server-side permission rules, and audit events used by B06 server-side permissions and audit logs. Future customer, team, settings, WhatsApp, AI, media, and payment-provider endpoints must follow the same contract.
 
 ## Roles
 
@@ -66,7 +66,7 @@ The server is the only authority for production permissions.
 
 ## Required Audit Events
 
-B06 should use these canonical event names unless implementation discovers a stronger existing local convention.
+B06 and later backend passes should use these canonical event names unless implementation discovers a stronger existing local convention.
 
 | Event | Required for |
 | --- | --- |
@@ -164,7 +164,7 @@ For sensitive denied write attempts, the server should write `permission.denied`
 
 Sensitive allowed writes must not be treated as complete unless the corresponding audit event is written.
 
-B06 should prefer a transaction-safe database path for sensitive mutations and audit writes. If an Edge Function cannot make the data mutation and audit write atomic yet, it must return a safe error if the audit write fails and document any residual consistency risk.
+B06 should prefer a transaction-safe database path for sensitive mutations and audit writes. Current B06 Edge Functions return a safe error if the audit write fails and document the residual consistency risk; launch hardening should convert high-risk writes to transaction-safe database functions/RPC.
 
 B06 implementation writes required audit rows from Edge Functions after the sensitive mutation and returns `AUDIT_WRITE_FAILED` if the audit insert fails. A future database RPC pass can make these mutation/audit pairs fully atomic.
 

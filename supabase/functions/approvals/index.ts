@@ -1,5 +1,4 @@
 import { getRouteParts, requireCommerceContext } from "../_shared/commerceContext.ts";
-import type { CommerceContext } from "../_shared/commerceContext.ts";
 import {
   fail,
   handleOptions,
@@ -15,18 +14,23 @@ import {
   requiredString,
 } from "../_shared/postgrest.ts";
 import {
+  auditWriteFailed,
   requirePermission,
-  writeRequiredAuditLog,
+  writeAuditLog,
 } from "../_shared/permissions.ts";
-
-type ApprovalDecision = "approved" | "escalated" | "rejected";
+import type { AuditContext } from "../_shared/permissions.ts";
 
 type ApprovalRow = {
   id: string;
-  riskCategory: string | null;
-  status: string;
-  subjectId: string | null;
+  requestedByMemberId: string | null;
+  decidedByMemberId: string | null;
   subjectType: string;
+  subjectId: string | null;
+  status: string;
+  riskCategory: string | null;
+  decisionNote: string | null;
+  decidedAt: string | null;
+  createdAt: string;
   updatedAt: string;
 };
 
@@ -41,15 +45,14 @@ Deno.serve(async (request) => {
     return context.response;
   }
 
-  const commerceContext = context.context;
   const parts = getRouteParts(request, "approvals");
 
   if (request.method === "GET" && parts.length === 0) {
-    return listApprovals(request, commerceContext.businessId);
+    return listApprovals(request, context.context.businessId);
   }
 
   if (request.method === "PATCH" && parts.length === 2 && parts[1] === "decision") {
-    return decideApproval(request, parts[0], commerceContext);
+    return decideApproval(request, parts[0], context.context);
   }
 
   return methodNotAllowed(["GET", "PATCH", "OPTIONS"]);
@@ -59,10 +62,10 @@ async function listApprovals(
   request: Request,
   businessId: string,
 ): Promise<Response> {
-  const status = normalizeStatusFilter(new URL(request.url).searchParams.get("status"));
+  const status = normalizeStatus(new URL(request.url).searchParams.get("status"));
   const filters = [
     `business_id=eq.${encodeURIComponent(businessId)}`,
-    "select=id,subject_type,subject_id,status,risk_category,updated_at",
+    "select=id,requested_by_member_id,decided_by_member_id,subject_type,subject_id,status,risk_category,decision_note,decided_at,created_at,updated_at",
     "order=created_at.desc",
     "limit=50",
   ];
@@ -89,8 +92,22 @@ async function listApprovals(
 async function decideApproval(
   request: Request,
   approvalId: string,
-  context: CommerceContext,
+  context: AuditContext,
 ): Promise<Response> {
+  const permission = await requirePermission(
+    context,
+    "approval.decide",
+    request,
+    {
+      endpoint: "approvals/decision",
+      entityId: approvalId,
+      entityType: "approval",
+    },
+  );
+  if (!permission.ok) {
+    return permission.response;
+  }
+
   const body = await readJsonRecord(request);
   if (!body.ok) {
     return body.response;
@@ -105,37 +122,26 @@ async function decideApproval(
     );
   }
 
-  const permission = await requirePermission(context, "approval.decide", {
-    endpoint: "approvals.decision",
-    entityId: approvalId,
-    entityType: "approval",
-    metadata: {
-      decision,
-    },
-  });
-  if (!permission.ok) {
-    return permission.response;
-  }
-
   const existing = await selectApproval(approvalId, context.businessId);
   if (!existing.ok) {
     return existing.response;
   }
 
   if (!existing.data) {
-    return fail("APPROVAL_NOT_FOUND", "This approval item could not be found.", 404);
+    return fail("APPROVAL_NOT_FOUND", "This approval could not be found.", 404);
   }
 
   const updated = await dbRequest(
     `/rest/v1/approvals?id=eq.${encodeURIComponent(approvalId)}` +
       `&business_id=eq.${encodeURIComponent(context.businessId)}` +
-      "&select=id,subject_type,subject_id,status,risk_category,updated_at",
+      "&select=id,requested_by_member_id,decided_by_member_id,subject_type,subject_id,status,risk_category,decision_note,decided_at,created_at,updated_at",
     {
       body: {
         decided_at: new Date().toISOString(),
         decided_by_member_id: context.membership.id,
-        decision_note: optionalText(body.data.note),
-        status: decision,
+        decision_note: null,
+        status: statusForDecision(decision),
+        updated_at: new Date().toISOString(),
       },
       method: "PATCH",
       prefer: "return=representation",
@@ -147,27 +153,25 @@ async function decideApproval(
     return updated.response;
   }
 
-  const audit = await writeRequiredAuditLog(context, {
+  const audit = await writeAuditLog(context, {
     action: "approval.decision_recorded",
     entityId: updated.data.id,
     entityType: "approval",
     metadata: {
-      actor_role: context.membership.role,
       approval_type: updated.data.subjectType,
       decision,
-      next_status: updated.data.status,
       permission: "approval.decide",
       previous_status: existing.data.status,
+      next_status: updated.data.status,
       result: "allowed",
     },
+    request,
   });
   if (!audit.ok) {
-    return audit.response;
+    return auditWriteFailed();
   }
 
-  return ok({
-    approval: approvalDto(updated.data),
-  });
+  return ok({ approval: approvalDto(updated.data) });
 }
 
 async function selectApproval(
@@ -180,7 +184,7 @@ async function selectApproval(
   return dbRequest(
     `/rest/v1/approvals?id=eq.${encodeURIComponent(approvalId)}` +
       `&business_id=eq.${encodeURIComponent(businessId)}` +
-      "&select=id,subject_type,subject_id,status,risk_category,updated_at&limit=1",
+      "&select=id,requested_by_member_id,decided_by_member_id,subject_type,subject_id,status,risk_category,decision_note,decided_at,created_at,updated_at&limit=1",
     { method: "GET" },
     (value) => {
       const record = firstRecord(value);
@@ -191,6 +195,8 @@ async function selectApproval(
 
 function approvalDto(approval: ApprovalRow) {
   return {
+    createdAt: approval.createdAt,
+    decidedAt: approval.decidedAt,
     id: approval.id,
     riskCategory: approval.riskCategory,
     status: approval.status,
@@ -202,44 +208,18 @@ function approvalDto(approval: ApprovalRow) {
 
 function parseApprovalRow(record: Record<string, unknown>): ApprovalRow {
   return {
+    createdAt: requiredString(record.created_at),
+    decidedAt: optionalString(record.decided_at),
+    decidedByMemberId: optionalString(record.decided_by_member_id),
+    decisionNote: optionalString(record.decision_note),
     id: requiredString(record.id),
+    requestedByMemberId: optionalString(record.requested_by_member_id),
     riskCategory: optionalString(record.risk_category),
     status: requiredString(record.status),
     subjectId: optionalString(record.subject_id),
     subjectType: requiredString(record.subject_type),
     updatedAt: requiredString(record.updated_at),
   };
-}
-
-function normalizeDecision(value: unknown): ApprovalDecision | null {
-  if (value === "approved" || value === "escalated" || value === "rejected") {
-    return value;
-  }
-
-  return null;
-}
-
-function normalizeStatusFilter(value: unknown): string | null {
-  if (
-    value === "approved" ||
-    value === "escalated" ||
-    value === "pending" ||
-    value === "rejected"
-  ) {
-    return value;
-  }
-
-  return null;
-}
-
-function optionalText(value: unknown): string | null {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const trimmed = value.trim();
-
-  return trimmed ? trimmed : null;
 }
 
 function requiredFirst(value: unknown): Record<string, unknown> {
@@ -250,4 +230,41 @@ function requiredFirst(value: unknown): Record<string, unknown> {
   }
 
   return record;
+}
+
+function normalizeStatus(value: unknown): string | null {
+  if (
+    value === "approved" ||
+    value === "escalated" ||
+    value === "pending" ||
+    value === "rejected" ||
+    value === "sent"
+  ) {
+    return value;
+  }
+
+  return null;
+}
+
+function normalizeDecision(value: unknown): string | null {
+  if (
+    value === "approved" ||
+    value === "asked" ||
+    value === "edited" ||
+    value === "escalated" ||
+    value === "rejected" ||
+    value === "sent"
+  ) {
+    return value;
+  }
+
+  return null;
+}
+
+function statusForDecision(decision: string): string {
+  if (decision === "asked" || decision === "edited") {
+    return "pending";
+  }
+
+  return decision;
 }

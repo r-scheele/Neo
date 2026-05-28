@@ -29,12 +29,12 @@ export type JwtVerificationResult =
       message: string;
     };
 
-type JwksKey = JsonWebKey & {
+type ClerkJsonWebKey = JsonWebKey & {
   kid: string;
 };
 
 type JsonWebKeySet = {
-  keys: JwksKey[];
+  keys: ClerkJsonWebKey[];
 };
 
 let cachedJwks: JsonWebKeySet | null = null;
@@ -166,7 +166,7 @@ async function getJwks(jwksUrl: string): Promise<JsonWebKeySet> {
   return cachedJwks;
 }
 
-async function verifySignature(parts: string[], jwk: JsonWebKey): Promise<boolean> {
+async function verifySignature(parts: string[], jwk: ClerkJsonWebKey): Promise<boolean> {
   try {
     const key = await crypto.subtle.importKey(
       "jwk",
@@ -178,10 +178,15 @@ async function verifySignature(parts: string[], jwk: JsonWebKey): Promise<boolea
       false,
       ["verify"],
     );
-    const data = bytesToArrayBuffer(new TextEncoder().encode(`${parts[0]}.${parts[1]}`));
-    const signature = bytesToArrayBuffer(base64UrlToBytes(parts[2]));
+    const data = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
+    const signature = base64UrlToBytes(parts[2]);
 
-    return crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, data);
+    return crypto.subtle.verify(
+      "RSASSA-PKCS1-v1_5",
+      key,
+      toArrayBuffer(signature),
+      toArrayBuffer(data),
+    );
   } catch {
     return false;
   }
@@ -200,15 +205,15 @@ function base64UrlToBytes(value: string): Uint8Array {
   return bytes;
 }
 
-function bytesToArrayBuffer(bytes: Uint8Array): ArrayBuffer {
-  const copy = new Uint8Array(bytes.byteLength);
-  copy.set(bytes);
-
-  return copy.buffer;
+function isJsonWebKey(value: unknown): value is ClerkJsonWebKey {
+  return isRecord(value) && typeof value.kid === "string";
 }
 
-function isJsonWebKey(value: unknown): value is JwksKey {
-  return isRecord(value) && typeof value.kid === "string";
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const buffer = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(buffer).set(bytes);
+
+  return buffer;
 }
 
 function optionalString(value: unknown): string | undefined {

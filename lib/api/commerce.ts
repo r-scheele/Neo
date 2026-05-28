@@ -242,6 +242,25 @@ export type BackendTodayResponse = {
   summary: BackendTodaySummary;
 };
 
+export type BackendApprovalDecision =
+  | "approved"
+  | "asked"
+  | "edited"
+  | "escalated"
+  | "rejected"
+  | "sent";
+
+export type BackendApproval = {
+  createdAt: string;
+  decidedAt?: string;
+  id: string;
+  riskCategory?: string;
+  status: string;
+  subjectId?: string;
+  subjectType: string;
+  updatedAt: string;
+};
+
 export function createCommerceOrder(
   client: ApiClient,
   payload: CreateCommerceOrderPayload,
@@ -269,6 +288,16 @@ export function createCommerceOrder(
   });
 }
 
+export function getCommerceOrder(
+  client: ApiClient,
+  orderId: string,
+): Promise<ApiResult<{ order: BackendOrderDetail }>> {
+  return client.request({
+    path: `${apiEndpoints.orders}/${encodeURIComponent(orderId)}`,
+    parseData: parseOrderDetailEnvelope,
+  });
+}
+
 export function cancelCommerceOrder(
   client: ApiClient,
   orderId: string,
@@ -281,26 +310,42 @@ export function cancelCommerceOrder(
   });
 }
 
-export function getCommerceOrder(
-  client: ApiClient,
-  orderId: string,
-): Promise<ApiResult<{ order: BackendOrderDetail }>> {
-  return client.request({
-    path: `${apiEndpoints.orders}/${encodeURIComponent(orderId)}`,
-    parseData: parseOrderDetailEnvelope,
-  });
-}
-
 export function updateCommerceOrderDeliveryStatus(
   client: ApiClient,
   orderId: string,
-  deliveryStatus: BackendOrderDeliveryState,
+  status: "not_started" | "scheduled" | "in_progress" | "delivered",
 ): Promise<ApiResult<{ order: BackendOrderDetail }>> {
   return client.request({
     path: `${apiEndpoints.orders}/${encodeURIComponent(orderId)}/delivery-status`,
     method: "PATCH",
-    body: { deliveryStatus },
+    body: { status },
     parseData: parseOrderDetailEnvelope,
+  });
+}
+
+export function updateCommerceOrderPaymentStatus(
+  client: ApiClient,
+  orderId: string,
+  status: "unpaid" | "awaiting_receipt" | "receipt_review" | "paid",
+): Promise<ApiResult<{ order: BackendOrderDetail }>> {
+  return client.request({
+    path: `${apiEndpoints.orders}/${encodeURIComponent(orderId)}/payment-status`,
+    method: "PATCH",
+    body: { status },
+    parseData: parseOrderDetailEnvelope,
+  });
+}
+
+export function decideApproval(
+  client: ApiClient,
+  approvalId: string,
+  decision: BackendApprovalDecision,
+): Promise<ApiResult<{ approval: BackendApproval }>> {
+  return client.request({
+    path: `${apiEndpoints.approvals}/${encodeURIComponent(approvalId)}/decision`,
+    method: "PATCH",
+    body: { decision },
+    parseData: parseApprovalEnvelope,
   });
 }
 
@@ -579,6 +624,29 @@ function parseTodayResponse(data: unknown): BackendTodayResponse {
       unpaidOrdersCount: requiredNumber(summary.unpaidOrdersCount),
       urgentChatsCount: requiredNumber(summary.urgentChatsCount),
     },
+  };
+}
+
+function parseApprovalEnvelope(data: unknown): { approval: BackendApproval } {
+  const record = requiredRecord(data);
+
+  return {
+    approval: parseApproval(record.approval),
+  };
+}
+
+function parseApproval(value: unknown): BackendApproval {
+  const record = requiredRecord(value);
+
+  return {
+    createdAt: requiredString(record.createdAt),
+    decidedAt: optionalString(record.decidedAt),
+    id: requiredString(record.id),
+    riskCategory: optionalString(record.riskCategory),
+    status: requiredString(record.status),
+    subjectId: optionalString(record.subjectId),
+    subjectType: requiredString(record.subjectType),
+    updatedAt: requiredString(record.updatedAt),
   };
 }
 

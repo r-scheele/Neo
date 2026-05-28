@@ -210,8 +210,8 @@ export function PermissionDeniedScreen({
           onHelp={() =>
             setNotice({
               message:
-                "These are mock role gates for the local MVP. Production permissions must be enforced by a trusted backend.",
-              title: "Local role gate",
+                "Sensitive writes are checked again by the backend. Local preview roles only affect demo screens.",
+              title: "Permission check",
             })
           }
         />
@@ -294,7 +294,7 @@ export function PermissionDeniedScreen({
           >
             <RoleBadge label={requiredLabel} tone="warning" />
             <Text className="mt-2 text-[14px] leading-5 text-neo-text-muted">
-              Allowed locally for{" "}
+              Allowed for{" "}
               {permittedRolesForAction
                 .map((role) => roleDetails[role].label)
                 .join(" and ")}

@@ -12,7 +12,7 @@ export type MockStaffRole = "owner" | "manager" | "staff";
 
 export type SensitivePermissionAction =
   | "approval-decision"
-  | "order-change"
+  | "order-decision"
   | "receipt-decision"
   | "safety-settings";
 
@@ -60,13 +60,13 @@ export const permissionActionDetails: Record<
     id: "approval-decision",
     restrictedLabel: "Approval required",
   },
-  "order-change": {
+  "order-decision": {
     actionLabel: "Change order status",
     description:
-      "Cancel orders, update delivery status, or change other sensitive order state.",
+      "Cancel orders, change payment status, or update delivery and fulfillment states.",
     icon: images.iconOrder,
-    id: "order-change",
-    restrictedLabel: "Owner or manager",
+    id: "order-decision",
+    restrictedLabel: "Restricted",
   },
   "receipt-decision": {
     actionLabel: "Review payment receipt",
@@ -114,7 +114,7 @@ export function getPermissionAction(
 
   if (
     action === "approval-decision" ||
-    action === "order-change" ||
+    action === "order-decision" ||
     action === "receipt-decision" ||
     action === "safety-settings"
   ) {
@@ -131,11 +131,11 @@ export function canPerformSensitiveAction({
   action: SensitivePermissionAction;
   role: MockStaffRole;
 }) {
-  if (
-    action === "approval-decision" ||
-    action === "order-change" ||
-    action === "receipt-decision"
-  ) {
+  if (action === "approval-decision" || action === "receipt-decision") {
+    return role === "owner" || role === "manager";
+  }
+
+  if (action === "order-decision") {
     return role === "owner" || role === "manager";
   }
 
@@ -162,4 +162,17 @@ export function getRoleScopedReceiptHref({
   role: MockStaffRole;
 }): Href {
   return `/receipt/${receiptId}${getLocalPreviewQueryString({ role })}` as Href;
+}
+
+export function getDeniedRoleFromDetails(
+  details: Record<string, unknown>,
+  fallbackRole: MockStaffRole,
+): MockStaffRole {
+  const role = details.role;
+
+  if (role === "owner" || role === "manager" || role === "staff") {
+    return role;
+  }
+
+  return fallbackRole;
 }

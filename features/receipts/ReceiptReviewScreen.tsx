@@ -16,6 +16,7 @@ import { images } from "@/constants/images";
 import type { MockStaffRole } from "@/features/permissions/permissionData";
 import {
   canPerformSensitiveAction,
+  getDeniedRoleFromDetails,
   getPermissionDeniedHref,
 } from "@/features/permissions/permissionData";
 import {
@@ -1191,11 +1192,11 @@ export function ReceiptReviewScreen({
   }
 
   const effectiveRole = screenState === "permission" ? "staff" : mockRole;
-  const isBackendReceipt = isBackendRecordId(receipt.id);
   const decisionsDisabled = screenState === "offline";
+  const usesBackendDecision = isBackendRecordId(receipt.id);
   const decisionsBlockedByRole =
     screenState === "permission" ||
-    (!isBackendReceipt &&
+    (!usesBackendDecision &&
       !canPerformSensitiveAction({
         action: "receipt-decision",
         role: effectiveRole,
@@ -1257,7 +1258,7 @@ export function ReceiptReviewScreen({
         router.push(
           getPermissionDeniedHref({
             action: "receipt-decision",
-            role: roleFromPermissionDetails(result.error.details.role),
+            role: getDeniedRoleFromDetails(result.error.details, effectiveRole),
           }),
         );
         return;
@@ -1377,12 +1378,4 @@ function getBackendReceiptDecision(
 
 function isBackendRecordId(recordId: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(recordId);
-}
-
-function roleFromPermissionDetails(value: unknown): MockStaffRole {
-  if (value === "owner" || value === "manager" || value === "staff") {
-    return value;
-  }
-
-  return "staff";
 }
