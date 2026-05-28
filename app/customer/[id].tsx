@@ -1,9 +1,21 @@
 import { useLocalSearchParams } from "expo-router";
 
-import { PlaceholderScreen } from "@/components/layout/PlaceholderScreen";
+import { getMockScreenState } from "@/components/feedback/ScreenState";
+import { CustomerProfileScreen } from "@/features/customer/CustomerProfileScreen";
+import { ProtectedRouteGuard } from "@/lib/auth/navigation";
 
 export default function CustomerProfileRoute() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, state } = useLocalSearchParams<{
+    id?: string;
+    state?: string | string[];
+  }>();
 
-  return <PlaceholderScreen title="Customer profile" description={`ID: ${id ?? ""}`} />;
+  return (
+    <ProtectedRouteGuard>
+      <CustomerProfileScreen
+        customerId={id}
+        initialState={getMockScreenState(state)}
+      />
+    </ProtectedRouteGuard>
+  );
 }

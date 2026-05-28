@@ -1,9 +1,22 @@
 import { useLocalSearchParams } from "expo-router";
 
-import { PlaceholderScreen } from "@/components/layout/PlaceholderScreen";
+import { getMockScreenState } from "@/components/feedback/ScreenState";
+import { ConversationDetailScreen } from "@/features/conversation/ConversationDetailScreen";
+import { ProtectedRouteGuard } from "@/lib/auth/navigation";
 
 export default function ConversationDetailRoute() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, state } = useLocalSearchParams<{
+    id: string;
+    state?: string | string[];
+  }>();
 
-  return <PlaceholderScreen title="Conversation" description={`ID: ${id ?? ""}`} />;
+  return (
+    <ProtectedRouteGuard>
+      <ConversationDetailScreen
+        conversationId={id}
+        initialState={getMockScreenState(state)}
+        key={`${id ?? "missing"}-${state ?? "ready"}`}
+      />
+    </ProtectedRouteGuard>
+  );
 }
