@@ -1,5 +1,10 @@
-import { PlaceholderScreen } from "@/components/layout/PlaceholderScreen";
+import { useLocalSearchParams } from "expo-router";
+
+import { getMockScreenState } from "@/components/feedback/ScreenState";
+import { SettingsScreen } from "@/features/settings/SettingsScreen";
 
 export default function SettingsRoute() {
-  return <PlaceholderScreen title="Settings" />;
+  const { state } = useLocalSearchParams<{ state?: string | string[] }>();
+
+  return <SettingsScreen state={getMockScreenState(state)} />;
 }
