@@ -1,14 +1,11 @@
 # approvals
 
-Status: B06 server permissions/audit foundation implemented and deployed.
+Status: B06 implemented for safe approval listing and owner/manager decision recording.
 
-Scope:
-- `GET /approvals` lists approval records for the authenticated business.
-- `PATCH /approvals/:approvalId/decision` records an owner/manager approval decision.
-- Staff denied-write attempts return `PERMISSION_DENIED`.
-- Allowed approval decisions write `approval.decision_recorded` audit rows.
+Implemented:
+- List safe approval records for the active business.
+- Record approval decisions through trusted owner/manager server authorization.
+- Write `approval.decision_recorded` audit rows with safe metadata only.
 
-Deferred:
-- AI draft creation and WhatsApp send execution remain in later backend prompts.
-- The Expo approvals queue still uses local fixture data until its integration prompt wires this endpoint.
-- Signed-in Clerk QA still needs to verify owner/manager approval decisions, staff denial, and audit rows before release.
+Future scope:
+- Connect live AI draft generation and WhatsApp send behavior in later prompts.

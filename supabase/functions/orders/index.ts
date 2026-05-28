@@ -1,5 +1,4 @@
 import { getRouteParts, requireCommerceContext } from "../_shared/commerceContext.ts";
-import type { CommerceContext } from "../_shared/commerceContext.ts";
 import {
   fail,
   handleOptions,
@@ -20,10 +19,11 @@ import {
 } from "../_shared/postgrest.ts";
 import {
   amountBand,
-  countBand,
+  auditWriteFailed,
   requirePermission,
-  writeRequiredAuditLog,
+  writeAuditLog,
 } from "../_shared/permissions.ts";
+import type { AuditContext } from "../_shared/permissions.ts";
 
 type OrderRow = {
   id: string;
@@ -79,44 +79,52 @@ Deno.serve(async (request) => {
     return context.response;
   }
 
-  const commerceContext = context.context;
   const parts = getRouteParts(request, "orders");
 
   if (request.method === "POST" && parts.length === 0) {
-    return createOrder(request, commerceContext);
+    return createOrder(request, context.context);
   }
 
   if (request.method === "GET" && parts[0] === "today-summary") {
-    return getTodaySummary(commerceContext.businessId);
-  }
-
-  if (request.method === "PATCH" && parts.length === 2 && parts[1] === "cancel") {
-    return cancelOrder(parts[0], commerceContext);
-  }
-
-  if (request.method === "PATCH" && parts.length === 2 && parts[1] === "delivery-status") {
-    return updateOrderDeliveryStatus(request, parts[0], commerceContext);
+    return getTodaySummary(context.context.businessId);
   }
 
   if (request.method === "GET" && parts.length === 1) {
-    return getOrderDetail(parts[0], commerceContext.businessId);
+    return getOrderDetail(parts[0], context.context.businessId);
   }
 
   if (request.method === "GET" && parts.length === 0) {
-    return listOrders(request, commerceContext.businessId);
+    return listOrders(request, context.context.businessId);
   }
 
-  return methodNotAllowed(["GET", "PATCH", "POST", "OPTIONS"]);
+  if (request.method === "PATCH" && parts.length === 2 && parts[1] === "cancel") {
+    return cancelOrder(request, parts[0], context.context);
+  }
+
+  if (request.method === "PATCH" && parts.length === 2 && parts[1] === "delivery-status") {
+    return updateOrderDeliveryStatus(request, parts[0], context.context);
+  }
+
+  if (request.method === "PATCH" && parts.length === 2 && parts[1] === "payment-status") {
+    return updateOrderPaymentStatus(request, parts[0], context.context);
+  }
+
+  return methodNotAllowed(["GET", "POST", "PATCH", "OPTIONS"]);
 });
 
 async function createOrder(
   request: Request,
-  context: CommerceContext,
+  context: AuditContext,
 ): Promise<Response> {
-  const permission = await requirePermission(context, "order.create", {
-    endpoint: "orders.create",
-    entityType: "order",
-  });
+  const permission = await requirePermission(
+    context,
+    "order.create",
+    request,
+    {
+      endpoint: "orders",
+      entityType: "order",
+    },
+  );
   if (!permission.ok) {
     return permission.response;
   }
@@ -210,21 +218,19 @@ async function createOrder(
     return insertedItems.response;
   }
 
-  const audit = await writeRequiredAuditLog(context, {
+  const audit = await writeAuditLog(context, {
     action: "order.created",
     entityId: insertedOrder.data.id,
     entityType: "order",
     metadata: {
-      actor_role: context.membership.role,
       amount_band: amountBand(totalAmount),
-      has_customer: customer.data !== null,
-      item_count_band: countBand(items.data.length),
-      payment_status: paymentStatus,
       permission: "order.create",
+      result: "allowed",
     },
+    request,
   });
   if (!audit.ok) {
-    return audit.response;
+    return auditWriteFailed();
   }
 
   return ok(
@@ -238,142 +244,6 @@ async function createOrder(
     },
     201,
   );
-}
-
-async function cancelOrder(
-  orderId: string,
-  context: CommerceContext,
-): Promise<Response> {
-  const permission = await requirePermission(context, "order.cancel", {
-    endpoint: "orders.cancel",
-    entityId: orderId,
-    entityType: "order",
-  });
-  if (!permission.ok) {
-    return permission.response;
-  }
-
-  const existing = await selectOrder(orderId, context.businessId);
-  if (!existing.ok) {
-    return existing.response;
-  }
-
-  if (!existing.data) {
-    return fail("ORDER_NOT_FOUND", "This order could not be found.", 404);
-  }
-
-  const updated = await dbRequest(
-    `/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}` +
-      `&business_id=eq.${encodeURIComponent(context.businessId)}&select=*`,
-    {
-      body: {
-        status: "cancelled",
-        updated_at: new Date().toISOString(),
-      },
-      method: "PATCH",
-      prefer: "return=representation",
-    },
-    (value) => parseOrderRow(requiredFirst(value)),
-  );
-
-  if (!updated.ok) {
-    return updated.response;
-  }
-
-  const audit = await writeRequiredAuditLog(context, {
-    action: "order.cancelled",
-    entityId: updated.data.id,
-    entityType: "order",
-    metadata: {
-      actor_role: context.membership.role,
-      next_status: updated.data.status,
-      permission: "order.cancel",
-      previous_status: existing.data.status,
-      result: "allowed",
-    },
-  });
-  if (!audit.ok) {
-    return audit.response;
-  }
-
-  return getOrderDetail(updated.data.id, context.businessId);
-}
-
-async function updateOrderDeliveryStatus(
-  request: Request,
-  orderId: string,
-  context: CommerceContext,
-): Promise<Response> {
-  const body = await readJsonRecord(request);
-  if (!body.ok) {
-    return body.response;
-  }
-
-  const nextDeliveryStatus = normalizeDeliveryStatus(body.data.deliveryStatus);
-  if (!nextDeliveryStatus) {
-    return fail(
-      "VALIDATION_INVALID_DELIVERY_STATUS",
-      "Choose a valid delivery status.",
-      400,
-    );
-  }
-
-  const permission = await requirePermission(context, "order.delivery_update", {
-    endpoint: "orders.delivery-status",
-    entityId: orderId,
-    entityType: "order",
-    metadata: {
-      next_status: nextDeliveryStatus,
-    },
-  });
-  if (!permission.ok) {
-    return permission.response;
-  }
-
-  const existing = await selectOrder(orderId, context.businessId);
-  if (!existing.ok) {
-    return existing.response;
-  }
-
-  if (!existing.data) {
-    return fail("ORDER_NOT_FOUND", "This order could not be found.", 404);
-  }
-
-  const updated = await dbRequest(
-    `/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}` +
-      `&business_id=eq.${encodeURIComponent(context.businessId)}&select=*`,
-    {
-      body: {
-        delivery_status: nextDeliveryStatus,
-        updated_at: new Date().toISOString(),
-      },
-      method: "PATCH",
-      prefer: "return=representation",
-    },
-    (value) => parseOrderRow(requiredFirst(value)),
-  );
-
-  if (!updated.ok) {
-    return updated.response;
-  }
-
-  const audit = await writeRequiredAuditLog(context, {
-    action: "order.delivery_status_updated",
-    entityId: updated.data.id,
-    entityType: "order",
-    metadata: {
-      actor_role: context.membership.role,
-      next_status: updated.data.deliveryStatus,
-      permission: "order.delivery_update",
-      previous_status: existing.data.deliveryStatus,
-      result: "allowed",
-    },
-  });
-  if (!audit.ok) {
-    return audit.response;
-  }
-
-  return getOrderDetail(updated.data.id, context.businessId);
 }
 
 async function listOrders(request: Request, businessId: string): Promise<Response> {
@@ -527,6 +397,230 @@ async function getTodaySummary(businessId: string): Promise<Response> {
   });
 }
 
+async function cancelOrder(
+  request: Request,
+  orderId: string,
+  context: AuditContext,
+): Promise<Response> {
+  const permission = await requirePermission(
+    context,
+    "order.cancel",
+    request,
+    {
+      endpoint: "orders/cancel",
+      entityId: orderId,
+      entityType: "order",
+    },
+  );
+  if (!permission.ok) {
+    return permission.response;
+  }
+
+  const currentOrder = await selectOrder(orderId, context.businessId);
+  if (!currentOrder.ok) {
+    return currentOrder.response;
+  }
+
+  if (!currentOrder.data) {
+    return fail("ORDER_NOT_FOUND", "This order could not be found.", 404);
+  }
+
+  const updated = await dbRequest(
+    `/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}` +
+      `&business_id=eq.${encodeURIComponent(context.businessId)}&select=*`,
+    {
+      body: {
+        status: "cancelled",
+        updated_at: new Date().toISOString(),
+      },
+      method: "PATCH",
+      prefer: "return=representation",
+    },
+    (value) => parseOrderRow(requiredFirst(value)),
+  );
+
+  if (!updated.ok) {
+    return updated.response;
+  }
+
+  const audit = await writeAuditLog(context, {
+    action: "order.cancelled",
+    entityId: updated.data.id,
+    entityType: "order",
+    metadata: {
+      permission: "order.cancel",
+      previous_status: currentOrder.data.status,
+      next_status: updated.data.status,
+      result: "allowed",
+    },
+    request,
+  });
+  if (!audit.ok) {
+    return auditWriteFailed();
+  }
+
+  return getOrderDetail(updated.data.id, context.businessId);
+}
+
+async function updateOrderDeliveryStatus(
+  request: Request,
+  orderId: string,
+  context: AuditContext,
+): Promise<Response> {
+  const permission = await requirePermission(
+    context,
+    "order.delivery_status.update",
+    request,
+    {
+      endpoint: "orders/delivery-status",
+      entityId: orderId,
+      entityType: "order",
+    },
+  );
+  if (!permission.ok) {
+    return permission.response;
+  }
+
+  const body = await readJsonRecord(request);
+  if (!body.ok) {
+    return body.response;
+  }
+
+  const nextStatus = normalizeDeliveryStatus(body.data.status);
+  if (!nextStatus) {
+    return fail(
+      "VALIDATION_INVALID_DELIVERY_STATUS",
+      "Choose a valid delivery status.",
+      400,
+    );
+  }
+
+  const currentOrder = await selectOrder(orderId, context.businessId);
+  if (!currentOrder.ok) {
+    return currentOrder.response;
+  }
+
+  if (!currentOrder.data) {
+    return fail("ORDER_NOT_FOUND", "This order could not be found.", 404);
+  }
+
+  const updated = await dbRequest(
+    `/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}` +
+      `&business_id=eq.${encodeURIComponent(context.businessId)}&select=*`,
+    {
+      body: {
+        delivery_status: nextStatus,
+        updated_at: new Date().toISOString(),
+      },
+      method: "PATCH",
+      prefer: "return=representation",
+    },
+    (value) => parseOrderRow(requiredFirst(value)),
+  );
+
+  if (!updated.ok) {
+    return updated.response;
+  }
+
+  const audit = await writeAuditLog(context, {
+    action: "order.delivery_status_updated",
+    entityId: updated.data.id,
+    entityType: "order",
+    metadata: {
+      delivery_status: nextStatus,
+      permission: "order.delivery_status.update",
+      previous_status: currentOrder.data.deliveryStatus,
+      next_status: updated.data.deliveryStatus,
+      result: "allowed",
+    },
+    request,
+  });
+  if (!audit.ok) {
+    return auditWriteFailed();
+  }
+
+  return getOrderDetail(updated.data.id, context.businessId);
+}
+
+async function updateOrderPaymentStatus(
+  request: Request,
+  orderId: string,
+  context: AuditContext,
+): Promise<Response> {
+  const permission = await requirePermission(
+    context,
+    "order.payment_status.update",
+    request,
+    {
+      endpoint: "orders/payment-status",
+      entityId: orderId,
+      entityType: "order",
+    },
+  );
+  if (!permission.ok) {
+    return permission.response;
+  }
+
+  const body = await readJsonRecord(request);
+  if (!body.ok) {
+    return body.response;
+  }
+
+  const nextStatus = normalizePaymentStatusUpdate(body.data.status);
+  if (!nextStatus) {
+    return fail(
+      "VALIDATION_INVALID_PAYMENT_STATUS",
+      "Choose a valid payment status.",
+      400,
+    );
+  }
+
+  const currentOrder = await selectOrder(orderId, context.businessId);
+  if (!currentOrder.ok) {
+    return currentOrder.response;
+  }
+
+  if (!currentOrder.data) {
+    return fail("ORDER_NOT_FOUND", "This order could not be found.", 404);
+  }
+
+  const updated = await dbRequest(
+    `/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}` +
+      `&business_id=eq.${encodeURIComponent(context.businessId)}&select=*`,
+    {
+      body: {
+        payment_status: nextStatus,
+        updated_at: new Date().toISOString(),
+      },
+      method: "PATCH",
+      prefer: "return=representation",
+    },
+    (value) => parseOrderRow(requiredFirst(value)),
+  );
+
+  if (!updated.ok) {
+    return updated.response;
+  }
+
+  const audit = await writeAuditLog(context, {
+    action: "payment.status_updated",
+    entityId: updated.data.id,
+    entityType: "order",
+    metadata: {
+      permission: "order.payment_status.update",
+      previous_status: currentOrder.data.paymentStatus,
+      next_status: updated.data.paymentStatus,
+      result: "allowed",
+    },
+    request,
+  });
+  if (!audit.ok) {
+    return auditWriteFailed();
+  }
+
+  return getOrderDetail(updated.data.id, context.businessId);
+}
+
 async function resolveCustomer(
   body: Record<string, unknown>,
   businessId: string,
@@ -664,8 +758,8 @@ function orderDetailDto({
     delivery: {
       estimate: "Delivery timing managed by staff",
       fee: order.deliveryFeeAmount,
-      state: deliveryStateFromStatus(order.deliveryStatus),
-      stateLabel: deliveryStatusLabel(order.deliveryStatus),
+      state: "scheduled",
+      stateLabel: "Scheduled",
       zone: "Delivery zone recorded on order",
     },
     displayId: displayOrderId(order),
@@ -690,12 +784,8 @@ function orderDetailDto({
     payment: paymentDto(order, paymentState, receipt),
     sourceLabel: "Backend order",
     sourceTitle: order.notes ? "Order note attached" : "Order created in Neo",
-    statusLabel: order.status === "cancelled" ? "Cancelled" : statusLabel(order.paymentStatus),
-    statusTone: order.status === "cancelled"
-      ? "warning"
-      : paymentState === "paid"
-      ? "success"
-      : "warning",
+    statusLabel: statusLabel(order.paymentStatus),
+    statusTone: paymentState === "paid" ? "success" : "warning",
     timeline: timelineDto(order, paymentState, receipt),
   };
 }
@@ -967,17 +1057,27 @@ function normalizeCreatePaymentStatus(value: unknown): string {
   return "unpaid";
 }
 
+function normalizePaymentStatusUpdate(value: unknown): string | null {
+  if (
+    value === "unpaid" ||
+    value === "awaiting_receipt" ||
+    value === "receipt_review" ||
+    value === "paid"
+  ) {
+    return value;
+  }
+
+  return null;
+}
+
 function normalizeDeliveryStatus(value: unknown): string | null {
-  if (value === "scheduled") {
-    return "scheduled";
-  }
-
-  if (value === "in_progress" || value === "in-progress") {
-    return "in_progress";
-  }
-
-  if (value === "delivered") {
-    return "delivered";
+  if (
+    value === "not_started" ||
+    value === "scheduled" ||
+    value === "in_progress" ||
+    value === "delivered"
+  ) {
+    return value;
   }
 
   return null;
@@ -993,30 +1093,6 @@ function paymentStateFromStatus(orderPaymentStatus: string, receipt: ReceiptRow 
   }
 
   return "awaiting-payment";
-}
-
-function deliveryStateFromStatus(deliveryStatus: string): "scheduled" | "in-progress" | "delivered" {
-  if (deliveryStatus === "delivered") {
-    return "delivered";
-  }
-
-  if (deliveryStatus === "in_progress" || deliveryStatus === "in-progress") {
-    return "in-progress";
-  }
-
-  return "scheduled";
-}
-
-function deliveryStatusLabel(deliveryStatus: string): string {
-  if (deliveryStatus === "delivered") {
-    return "Delivered";
-  }
-
-  if (deliveryStatus === "in_progress" || deliveryStatus === "in-progress") {
-    return "In progress";
-  }
-
-  return "Scheduled";
 }
 
 function statusLabel(paymentStatus: string): string {

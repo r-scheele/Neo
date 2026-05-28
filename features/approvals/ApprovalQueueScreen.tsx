@@ -10,6 +10,7 @@ import { images } from "@/constants/images";
 import type { MockStaffRole } from "@/features/permissions/permissionData";
 import {
   canPerformSensitiveAction,
+  getDeniedRoleFromDetails,
   getPermissionDeniedHref,
   getRoleScopedReceiptHref,
 } from "@/features/permissions/permissionData";
@@ -18,6 +19,7 @@ import {
   trackAnalyticsEvent,
   trackScreenStateSeen,
 } from "@/lib/analytics";
+import { decideApproval, useApiClient } from "@/lib/api";
 import { Link, Pressable, ScrollView, Text, TextInput, View } from "@/src/tw";
 import { useOperationsStore } from "@/stores/useOperationsStore";
 
@@ -737,6 +739,7 @@ export function ApprovalQueueScreen({
   mockRole?: MockStaffRole;
 }) {
   const router = useRouter();
+  const apiClient = useApiClient();
   const { height, width } = useWindowDimensions();
   const isCompactPhone = height < 760 || width < 380;
   const horizontalPadding = width >= 390 ? 20 : 16;
@@ -814,10 +817,34 @@ export function ApprovalQueueScreen({
     setApprovalPendingCount(counts.all);
   }, [counts.all, setApprovalPendingCount]);
 
-  function decide(item: ApprovalQueueItem, decision: ApprovalDecision) {
-    if (actionsBlockedByRole) {
+  async function decide(item: ApprovalQueueItem, decision: ApprovalDecision) {
+    const isBackendApproval = isBackendRecordId(item.id);
+
+    if (actionsBlockedByRole && !isBackendApproval) {
       router.push(permissionHref);
       return;
+    }
+
+    if (isBackendApproval) {
+      const result = await decideApproval(apiClient, item.id, decision);
+
+      if (!result.ok) {
+        if (result.error.category === "permission_denied") {
+          router.push(
+            getPermissionDeniedHref({
+              action: "approval-decision",
+              role: getDeniedRoleFromDetails(result.error.details, effectiveRole),
+            }),
+          );
+          return;
+        }
+
+        setNotice({
+          message: result.error.message,
+          title: "Approval decision failed",
+        });
+        return;
+      }
     }
 
     if (
@@ -836,8 +863,9 @@ export function ApprovalQueueScreen({
     }));
     setEditingId(null);
     setNotice({
-      message:
-        "Decision saved to local UI only. No AI action, payment update, or customer message was sent.",
+      message: isBackendApproval
+        ? "Decision saved through the backend and recorded in the audit log. No customer message was sent."
+        : "Decision saved to local UI only. No AI action, payment update, or customer message was sent.",
       title: getDecisionLabel(decision),
     });
   }
@@ -869,7 +897,7 @@ export function ApprovalQueueScreen({
       return;
     }
 
-    decide(item, "edited");
+    void decide(item, "edited");
   }
 
   function resetQueue() {
@@ -958,11 +986,19 @@ export function ApprovalQueueScreen({
                   item={item}
                   key={item.id}
                   mockRole={effectiveRole}
-                  onApprove={(approvalItem) => decide(approvalItem, "approved")}
-                  onAsk={(approvalItem) => decide(approvalItem, "asked")}
+                  onApprove={(approvalItem) => {
+                    void decide(approvalItem, "approved");
+                  }}
+                  onAsk={(approvalItem) => {
+                    void decide(approvalItem, "asked");
+                  }}
                   onEdit={startEdit}
-                  onEscalate={(approvalItem) => decide(approvalItem, "escalated")}
-                  onReject={(approvalItem) => decide(approvalItem, "rejected")}
+                  onEscalate={(approvalItem) => {
+                    void decide(approvalItem, "escalated");
+                  }}
+                  onReject={(approvalItem) => {
+                    void decide(approvalItem, "rejected");
+                  }}
                   onSaveEdit={saveEdit}
                   setDraftText={setDraftText}
                   stopEditing={() => setEditingId(null)}
@@ -976,4 +1012,8 @@ export function ApprovalQueueScreen({
       </View>
     </ScrollView>
   );
+}
+
+function isBackendRecordId(recordId: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(recordId);
 }

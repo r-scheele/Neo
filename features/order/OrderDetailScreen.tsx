@@ -18,11 +18,12 @@ import {
   updateCommerceOrderDeliveryStatus,
   useApiClient,
 } from "@/lib/api";
-import type { BackendOrderDeliveryState } from "@/lib/api";
+import {
+  getDeniedRoleFromDetails,
+  getPermissionDeniedHref,
+} from "@/features/permissions/permissionData";
 import { Link, Pressable, ScrollView, Text, View } from "@/src/tw";
 
-import type { MockStaffRole } from "@/features/permissions/permissionData";
-import { getPermissionDeniedHref } from "@/features/permissions/permissionData";
 import type {
   OrderDetailItem,
   OrderDetailRecord,
@@ -1016,100 +1017,89 @@ export function OrderDetailScreen({
 
   const totals = calculateOrderTotals(order.items, order.delivery.fee);
   const actionsDisabled =
-    isSavingAction || screenState === "offline" || screenState === "permission";
+    screenState === "offline" || screenState === "permission" || isSavingAction;
 
-  async function updateDeliveryStatus() {
-    if (!order) {
-      return;
-    }
-
-    if (!isBackendRecordId(order.id)) {
-      setNotice({
-        message:
-          "Delivery updates stay local for isolated demo orders. Backend records need a durable order ID.",
-        title: "Delivery action paused",
-      });
-      return;
-    }
-
-    const nextStatus = nextDeliveryState(order.delivery.state);
-
-    if (!nextStatus) {
-      setNotice({
-        message: "This order is already marked delivered.",
-        title: "Delivery already complete",
-      });
-      return;
-    }
-
-    setIsSavingAction(true);
-    const result = await updateCommerceOrderDeliveryStatus(
-      apiClient,
-      order.id,
-      nextStatus,
-    );
-    setIsSavingAction(false);
-
-    if (!result.ok) {
-      handleSensitiveActionError(result.error);
-      return;
-    }
-
-    setBackendOrder(normalizeBackendOrderDetail(result.data.order));
-    setNotice({
-      message: "Delivery status was updated on the backend and audit logged.",
-      title: "Delivery updated",
-    });
-  }
-
-  async function cancelOrder() {
-    if (!order) {
-      return;
-    }
-
-    if (!isBackendRecordId(order.id)) {
-      setNotice({
-        message:
-          "Order cancellation stays local for isolated demo orders. Backend records need a durable order ID.",
-        title: "Cancel order not enabled",
-      });
-      return;
-    }
-
-    setIsSavingAction(true);
-    const result = await cancelCommerceOrder(apiClient, order.id);
-    setIsSavingAction(false);
-
-    if (!result.ok) {
-      handleSensitiveActionError(result.error);
-      return;
-    }
-
-    setBackendOrder(normalizeBackendOrderDetail(result.data.order));
-    setNotice({
-      message: "Order cancellation was saved on the backend and audit logged.",
-      title: "Order cancelled",
-    });
-  }
-
-  function handleSensitiveActionError(error: {
-    category: string;
-    details: Record<string, unknown>;
-    message: string;
-  }) {
-    if (error.category === "permission_denied") {
-      router.push(
-        getPermissionDeniedHref({
-          action: "order-change",
-          role: roleFromPermissionDetails(error.details.role),
-        }),
+  async function showUpdateDeliveryNotice() {
+    if (orderId && isBackendRecordId(orderId)) {
+      setIsSavingAction(true);
+      const result = await updateCommerceOrderDeliveryStatus(
+        apiClient,
+        orderId,
+        "delivered",
       );
+      setIsSavingAction(false);
+
+      if (!result.ok) {
+        if (result.error.category === "permission_denied") {
+          router.push(
+            getPermissionDeniedHref({
+              action: "order-decision",
+              role: getDeniedRoleFromDetails(result.error.details, "staff"),
+            }),
+          );
+          return;
+        }
+
+        setNotice({
+          message: result.error.message,
+          title: "Delivery update failed",
+        });
+        return;
+      }
+
+      setBackendOrder(normalizeBackendOrderDetail(result.data.order));
+      setNotice({
+        message:
+          "Delivery status was updated by the backend and recorded in the audit log.",
+        title: "Delivery updated",
+      });
       return;
     }
 
     setNotice({
-      message: error.message,
-      title: "Order action could not save",
+      message:
+        "Delivery updates are local-only in this mock screen. Real delivery changes need backend sync later.",
+      title: "Delivery action paused",
+    });
+  }
+
+  async function showCancelNotice() {
+    if (orderId && isBackendRecordId(orderId)) {
+      setIsSavingAction(true);
+      const result = await cancelCommerceOrder(apiClient, orderId);
+      setIsSavingAction(false);
+
+      if (!result.ok) {
+        if (result.error.category === "permission_denied") {
+          router.push(
+            getPermissionDeniedHref({
+              action: "order-decision",
+              role: getDeniedRoleFromDetails(result.error.details, "staff"),
+            }),
+          );
+          return;
+        }
+
+        setNotice({
+          message: result.error.message,
+          title: "Order could not cancel",
+        });
+        return;
+      }
+
+      setBackendOrder(normalizeBackendOrderDetail(result.data.order));
+      setNotice({
+        message:
+          "Order cancellation was handled by the backend and recorded in the audit log.",
+        title: "Order cancelled",
+      });
+      return;
+    }
+
+    setNotice({
+      message:
+        "Order cancellation is intentionally not connected. A real cancellation flow needs permissions and audit history.",
+      title: "Cancel order not enabled",
     });
   }
 
@@ -1151,15 +1141,21 @@ export function OrderDetailScreen({
         <PaymentStatusCard order={order} />
         <DeliveryCard
           actionsDisabled={actionsDisabled}
-          onUpdateDelivery={updateDeliveryStatus}
+          onUpdateDelivery={() => {
+            void showUpdateDeliveryNotice();
+          }}
           order={order}
         />
         <ItemsCard order={order} totals={totals} />
         <TimelineCard order={order} />
         <ActionDock
           actionsDisabled={actionsDisabled}
-          onCancelOrder={cancelOrder}
-          onUpdateDelivery={updateDeliveryStatus}
+          onCancelOrder={() => {
+            void showCancelNotice();
+          }}
+          onUpdateDelivery={() => {
+            void showUpdateDeliveryNotice();
+          }}
           order={order}
         />
       </View>
@@ -1169,26 +1165,4 @@ export function OrderDetailScreen({
 
 function isBackendRecordId(recordId: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(recordId);
-}
-
-function nextDeliveryState(
-  currentState: OrderDetailRecord["delivery"]["state"],
-): BackendOrderDeliveryState | null {
-  if (currentState === "scheduled") {
-    return "in-progress";
-  }
-
-  if (currentState === "in-progress") {
-    return "delivered";
-  }
-
-  return null;
-}
-
-function roleFromPermissionDetails(value: unknown): MockStaffRole {
-  if (value === "owner" || value === "manager" || value === "staff") {
-    return value;
-  }
-
-  return "staff";
 }

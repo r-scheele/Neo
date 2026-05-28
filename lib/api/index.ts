@@ -3,6 +3,7 @@ export {
   cancelCommerceOrder,
   completeFollowUp,
   createCommerceOrder,
+  decideApproval,
   getCommerceOrder,
   getCustomerProfile,
   getFollowUps,
@@ -11,6 +12,7 @@ export {
   rescheduleFollowUp,
   reviewReceipt,
   updateCommerceOrderDeliveryStatus,
+  updateCommerceOrderPaymentStatus,
 } from "./commerce";
 export { resolveApiConfig } from "./config";
 export { apiEndpoints, type ApiEndpointName } from "./endpoints";
@@ -36,7 +38,8 @@ export type {
 } from "./types";
 export type {
   BackendCustomerProfile,
-  BackendOrderDeliveryState,
+  BackendApproval,
+  BackendApprovalDecision,
   BackendFollowUpQueueItem,
   BackendFollowUpsResponse,
   BackendOrderDetail,

@@ -150,7 +150,7 @@ The following must remain mocked, local, disabled, or represented as placeholder
 - Cross-device sync.
 - Admin monitoring.
 
-Backend/API ownership, server-side data contracts, safe error categories, and approved Supabase foundation decisions are defined in `docs/backend-api-boundary.md` and `docs/backend/`. `lib/api/` owns the typed client boundary from B02, B05 connects commerce records through Supabase Edge Functions, and B06 enforces server-side permissions/audit for current commerce and approval mutations. WhatsApp, AI, OCR, and payment-provider work remain behind later backend prompts.
+Backend/API ownership, server-side data contracts, safe error categories, and approved Supabase foundation decisions are defined in `docs/backend-api-boundary.md` and `docs/backend/`. `lib/api/` owns the typed client boundary from B02, B05 connects commerce records through Supabase Edge Functions, and B06 enforces trusted role checks plus audit writes for current sensitive commerce endpoints. WhatsApp, AI, OCR, and payment-provider work remain behind later backend prompts.
 
 ## Quality Gates
 
@@ -165,4 +165,4 @@ Every implementation step should keep these checks green:
 
 ## Ready For Next Step
 
-This architecture is ready for the remaining ordered backend integration passes. B01 Supabase foundation, B02 API client/auth boundary, B03 database schema readiness, B04 server auth/profile bootstrap, B05 commerce records backend sync, and B06 server-side permissions/audit logs are complete. Complete signed-in B06 QA before release, and run B07 only when Meta WhatsApp prerequisites are ready.
+This architecture is ready for the remaining ordered backend integration passes. B01 Supabase foundation, B02 API client/auth boundary, B03 database schema readiness, B04 server auth/profile bootstrap, B05 commerce records backend sync, and B06 server-side permissions/audit logging are complete; do not run B07 until WhatsApp prerequisites are approved.

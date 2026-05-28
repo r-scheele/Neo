@@ -2,7 +2,7 @@
 
 Date: 2026-05-27
 
-Status: approved for B06 implementation.
+Status: approved and implemented for current B06 sensitive commerce endpoints.
 
 ## Decision
 
@@ -28,6 +28,6 @@ The canonical role, permission, audit event, and safe metadata contract is `docs
 - Do not store raw private message text, AI prompts, full AI draft text, receipt images, bank alerts, phone numbers, exact addresses, provider tokens, or secrets in audit metadata.
 - Prefer safe categories, IDs, request IDs, timestamps, and actor references.
 
-## B06 Requirement
+## Implementation Requirement
 
-B06 must implement authoritative permissions and audit writes according to `docs/backend/permissions-audit-contract.md`.
+B06 implements authoritative permissions and audit writes for current sensitive commerce endpoints according to `docs/backend/permissions-audit-contract.md`. Later sensitive endpoints must continue to use the same retention and safe metadata rules.

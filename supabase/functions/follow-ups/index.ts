@@ -1,5 +1,4 @@
 import { getRouteParts, requireCommerceContext } from "../_shared/commerceContext.ts";
-import type { CommerceContext } from "../_shared/commerceContext.ts";
 import {
   fail,
   handleOptions,
@@ -17,9 +16,11 @@ import {
   requiredString,
 } from "../_shared/postgrest.ts";
 import {
+  auditWriteFailed,
   requirePermission,
-  writeRequiredAuditLog,
+  writeAuditLog,
 } from "../_shared/permissions.ts";
+import type { AuditContext } from "../_shared/permissions.ts";
 
 type FollowUpRow = {
   id: string;
@@ -58,22 +59,22 @@ Deno.serve(async (request) => {
     return context.response;
   }
 
-  const commerceContext = context.context;
   const parts = getRouteParts(request, "follow-ups");
 
   if (request.method === "GET" && parts.length === 0) {
-    return listFollowUps(request, commerceContext.businessId);
+    return listFollowUps(request, context.context.businessId);
   }
 
   if (request.method === "PATCH" && parts.length === 2 && parts[1] === "complete") {
     return completeFollowUp(
+      request,
       parts[0],
-      commerceContext,
+      context.context,
     );
   }
 
   if (request.method === "PATCH" && parts.length === 2 && parts[1] === "reschedule") {
-    return rescheduleFollowUp(request, parts[0], commerceContext);
+    return rescheduleFollowUp(request, parts[0], context.context);
   }
 
   return methodNotAllowed(["GET", "PATCH", "OPTIONS"]);
@@ -128,14 +129,20 @@ async function listFollowUps(request: Request, businessId: string): Promise<Resp
 }
 
 async function completeFollowUp(
+  request: Request,
   followUpId: string,
-  context: CommerceContext,
+  context: AuditContext,
 ): Promise<Response> {
-  const permission = await requirePermission(context, "follow_up.complete", {
-    endpoint: "follow-ups.complete",
-    entityId: followUpId,
-    entityType: "follow_up",
-  });
+  const permission = await requirePermission(
+    context,
+    "follow_up.complete",
+    request,
+    {
+      endpoint: "follow-ups/complete",
+      entityId: followUpId,
+      entityType: "follow_up",
+    },
+  );
   if (!permission.ok) {
     return permission.response;
   }
@@ -160,19 +167,19 @@ async function completeFollowUp(
     return updated.response;
   }
 
-  const audit = await writeRequiredAuditLog(context, {
+  const audit = await writeAuditLog(context, {
     action: "follow_up.completed",
     entityId: updated.data.id,
     entityType: "follow_up",
     metadata: {
-      actor_role: context.membership.role,
-      next_status: updated.data.status,
+      next_status: "done",
       permission: "follow_up.complete",
       result: "allowed",
     },
+    request,
   });
   if (!audit.ok) {
-    return audit.response;
+    return auditWriteFailed();
   }
 
   return followUpDetailResponse(updated.data, context.businessId);
@@ -181,8 +188,22 @@ async function completeFollowUp(
 async function rescheduleFollowUp(
   request: Request,
   followUpId: string,
-  context: CommerceContext,
+  context: AuditContext,
 ): Promise<Response> {
+  const permission = await requirePermission(
+    context,
+    "follow_up.reschedule",
+    request,
+    {
+      endpoint: "follow-ups/reschedule",
+      entityId: followUpId,
+      entityType: "follow_up",
+    },
+  );
+  if (!permission.ok) {
+    return permission.response;
+  }
+
   const body = await readJsonRecord(request);
   if (!body.ok) {
     return body.response;
@@ -211,18 +232,6 @@ async function rescheduleFollowUp(
     );
   }
 
-  const permission = await requirePermission(context, "follow_up.reschedule", {
-    endpoint: "follow-ups.reschedule",
-    entityId: followUpId,
-    entityType: "follow_up",
-    metadata: {
-      next_status: nextStatus,
-    },
-  });
-  if (!permission.ok) {
-    return permission.response;
-  }
-
   const updated = await dbRequest(
     `/rest/v1/follow_ups?id=eq.${encodeURIComponent(followUpId)}` +
       `&business_id=eq.${encodeURIComponent(context.businessId)}` +
@@ -244,19 +253,19 @@ async function rescheduleFollowUp(
     return updated.response;
   }
 
-  const audit = await writeRequiredAuditLog(context, {
+  const audit = await writeAuditLog(context, {
     action: "follow_up.rescheduled",
     entityId: updated.data.id,
     entityType: "follow_up",
     metadata: {
-      actor_role: context.membership.role,
-      next_status: updated.data.status,
+      next_status: nextStatus,
       permission: "follow_up.reschedule",
       result: "allowed",
     },
+    request,
   });
   if (!audit.ok) {
-    return audit.response;
+    return auditWriteFailed();
   }
 
   return followUpDetailResponse(updated.data, context.businessId);
