@@ -1,6 +1,6 @@
 # State Management Plan
 
-Status: Draft state plan. No stores have been created yet.
+Status: Partial local MVP implementation. Setup, user preference, operations, and connectivity stores exist. Draft state remains local until the product explicitly approves what customer-facing draft text can be stored or persisted.
 
 ## Principle
 
@@ -19,24 +19,25 @@ Do not put everything in Zustand. Use local state for local UI, route params for
 | AI tone preferences | Zustand | Yes, AsyncStorage | Preferences only; no private prompt logs |
 | Delivery zone drafts | Zustand | Maybe, AsyncStorage | Local draft only until backend exists |
 | Product basics drafts | Zustand | Maybe, AsyncStorage | Local draft only; clear on sign-out |
-| Today queue mock data | Feature data or Zustand | Optional | Use typed fixtures first; store only if shared |
+| Today queue mock data | Feature data plus Zustand counts | Runtime only | Keep fixture details local; share only safe attention counts |
 | Inbox mock conversations | Feature data or Zustand | No for real messages | Do not persist private messages in AsyncStorage for production |
-| AI draft review state | Local or Zustand | Draft only | Do not store sensitive generated text long-term locally |
+| AI draft review state | Local component state | No | Current drafts include customer-facing message text; do not move to Zustand without a draft-storage decision |
+| Connectivity status and last synced UI label | Zustand | Runtime only | Safe cross-screen UI metadata; not production network truth yet |
 | Receipt review UI state | Local component state | No | Do not persist receipt images or payment proof locally |
 | User session | Clerk | Clerk-managed | Do not duplicate tokens in Zustand |
 | UI preferences | Zustand | Yes, AsyncStorage | Safe values such as dismissed tips |
 
 ## Planned Stores
 
-Create stores only when the relevant feature is implemented.
+Create stores only when shared state is truly needed.
 
 | Store | Purpose | Create When |
 | --- | --- | --- |
-| `useSetupStore` | Setup progress, setup drafts, next required task | Setup Checklist is implemented |
-| `useUserPreferencesStore` | Safe UI preferences and dismissed education | First preference must survive restart |
-| `useOperationsStore` | Shared Today queue, approval counts, follow-up counts for mock/local app state | Today data is shared by multiple tabs |
-| `useDraftStore` | Safe local unsent drafts | Conversation or follow-up drafts need restart recovery |
-| `useConnectivityStore` | Online/offline and last synced UI state | Offline states are implemented |
+| `useSetupStore` | Setup progress, setup drafts, next required task | Exists |
+| `useUserPreferencesStore` | Safe UI preferences and dismissed education | Exists |
+| `useOperationsStore` | Safe tab attention counts for Today, Inbox, Approvals, Follow-ups, and Settings | Exists |
+| `useDraftStore` | Safe local unsent drafts | Deferred until product/security approves local draft text ownership |
+| `useConnectivityStore` | Online/offline and last synced UI metadata | Exists |
 
 Avoid creating all stores during scaffold. Add them feature by feature.
 
@@ -75,4 +76,3 @@ At that point, Zustand should hold client UI state and cached views only. It sho
 ## Done Looks Like
 
 State management is clear when every value has one owner, restart behavior is intentional, and sensitive data is not persisted in unsafe storage.
-

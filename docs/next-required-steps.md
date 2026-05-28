@@ -2,50 +2,47 @@
 
 ## Purpose
 
-This document lists the immediate recovery steps required before Neo enters app implementation. It is intentionally limited to workflow repair and project setup readiness.
+This document lists the immediate integration steps required after the local MVP prototype. It replaces the older pre-scaffold recovery checklist.
 
 ## Current Status
 
-Planning and generated assets exist. The app codebase does not exist yet.
+The app scaffold and primary MVP screens exist. Current behavior is still local-only for auth, WhatsApp, AI, orders, receipts, payments, permissions, and sync.
 
-Do not implement the Home screen or any app feature until the architecture plan, `AGENTS.md`, app scaffold, asset constants, and Home screen spec/reference are in place.
+Run only one integration pass at a time. Do not configure services, install service packages, or add backend behavior outside the selected prompt.
 
-## Next 5 Actions
+## Next 5 Integration Actions
 
-1. Create `docs/architecture-plan.md`.
+1. Preserve the environment/config cleanup baseline.
 
-   Use `ai-mobile-build-kit/04-stack-and-architecture/architecture-plan-template.md`, `default-expo-stack.md`, `folder-structure-guide.md`, `dependency-decision-rules.md`, `state-management-guide.md`, and the existing Neo docs. The plan should define routing, folder structure, styling, image assets, state/data approach, TypeScript, linting, and testing.
+   The integration order starts with environment/config cleanup. Keep `.env.example`, README, readiness docs, config assumptions, and integration order aligned after each future pass.
 
-2. Create `AGENTS.md`.
+2. Configure Clerk authentication.
 
-   Only do this after `docs/architecture-plan.md` exists. It should capture the project rules, product guardrails, design system, implementation constraints, commands to run, and the rule that sensitive payment actions require human review.
+   Install only the approved Clerk dependencies for that pass, add `ClerkProvider`, implement real sign-in/sign-up, and keep private Clerk keys out of the Expo client.
 
-3. Scaffold the Expo/React Native app shell.
+3. Protect navigation and the app shell.
 
-   Create the actual app workspace with `package.json`, TypeScript, lint scripts, Expo Router structure, and empty route placeholders only as required by the architecture plan. Do not build feature screens during scaffolding.
+   Use real auth/setup state to protect setup, tabs, detail routes, and sensitive paths. Public routes should remain Welcome and Sign In.
 
-4. Wire generated assets.
+4. Complete safe state and persistence ownership.
 
-   Create `constants/images.ts`, confirm the app can import assets from `assets/images/`, and decide how SVG icons in `assets/icons/` will be consumed without installing new libraries unless the architecture plan explicitly approves them.
+   Centralize only the shared state that is actually needed, keep sensitive data out of Zustand/AsyncStorage, and clear user-specific safe local data on sign-out.
 
-5. Prepare the Home screen implementation package.
+5. Define the backend/API boundary.
 
-   Create `docs/ui-design-prompts/screens/home-screen.md`, create or place `design-assets/ui-screens/home.png`, and define the exact acceptance criteria for the Home/Today Command Center before coding starts.
+   Decide where real WhatsApp sync, AI draft generation, receipt/payment workflows, customer/order records, server permissions, and audit logs live before implementing them.
 
-## Stop Conditions Before Coding
+## Stop Conditions
 
-- Product docs are present and approved enough for implementation.
-- Architecture plan exists.
-- `AGENTS.md` exists and matches the architecture plan.
-- App scaffold exists and passes baseline TypeScript/lint.
-- Home screen spec and reference image exist.
+- A required file from the selected integration prompt is missing.
+- A service integration would require private secrets in the Expo app.
+- A task needs a backend/security decision that does not exist yet.
+- TypeScript, lint, or app-start verification fails and the failure is not clearly pre-existing.
 
 ## Do Not Do Yet
 
-- Do not implement the Home screen.
-- Do not create unrelated screens.
-- Do not install packages.
-- Do not delete generated assets or planning docs.
-- Do not invent navigation beyond the architecture plan.
-- Do not imply payment confirmation can happen automatically from receipt screenshots.
-
+- Do not implement real WhatsApp sync, webhooks, or send actions.
+- Do not implement real AI calls or receipt OCR in the Expo client.
+- Do not verify payments from screenshots alone.
+- Do not add private API keys, provider secrets, database URLs, webhook secrets, or admin credentials to client env files.
+- Do not remove local-only warnings until the real integration works end to end.

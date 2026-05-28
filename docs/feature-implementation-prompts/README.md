@@ -31,6 +31,6 @@ These prompts turn Neo's MVP backlog into focused AI-assisted implementation tas
 
 ## Current Starting Point
 
-The app shell, route placeholders, design docs, generated UI references, runtime image assets, and `constants/images.ts` exist. The first recommended implementation prompt is:
+The local MVP feature prompts have been implemented. Keep these prompts as historical implementation specs and use `feature-prompt-index.md` to understand which local screens exist.
 
-`docs/feature-implementation-prompts/prompts/01-welcome-screen.md`
+New work should now use the integration prompts in `docs/integration-prompts/`, starting with environment/config cleanup and then moving one pass at a time toward real services.

@@ -18,6 +18,27 @@ Every MVP screen must handle the states below. Neo is an operations product, so 
 | Customer Profile | Profile skeleton | New customer profile with no orders yet | Failed to load customer with retry | Note saved confirmation | Cached profile visible, new notes disabled | Sensitive notes hidden if role lacks access | Tabs and history scroll without overlap | Explain customer memory | Summary and next action appear first |
 | Settings | Form row skeletons | Missing settings show recommended defaults | Save/load failed with inline error | Saved toast | Read cached settings, save disabled | Role-limited settings locked | Long forms grouped into sections | Guided defaults by business type | Show current connection and guardrail status |
 
+## Phase A Implementation Status
+
+As of Prompt 10, the current client/local MVP has loading, empty, error, offline, and permission coverage across the primary route wrappers and feature screens listed above. These states are still driven by local fixtures, component state, safe stores, or mock route params; they are not real backend/network states yet.
+
+Notable Prompt 10 cleanup:
+
+- Customer Profile now disables local note creation and local follow-up creation in offline and permission states, matching its existing banner copy and restricted note editing.
+- Payment and receipt states remain trust-first: receipt UI continues to warn that screenshots are not automatic proof of payment, and offline/permission decisions remain disabled.
+- Local-only success and error copy remains explicit where no backend action, WhatsApp message, payment check, OCR, or persistence occurs.
+
+## Backend-Deferred State Sources
+
+| State source | Deferred until | Notes |
+| --- | --- | --- |
+| Real loading/error states for commerce records | Backend provider, database/schema, API contracts, and deployment target are approved | Current list/detail screens use fixtures or local fallbacks. |
+| Real offline/connectivity truth | Backend/API boundary and connectivity strategy are approved | Current offline states are local UI states and safe for demo/testing only. |
+| Real permission-denied responses | Clerk-to-backend auth strategy, trusted role source, and server authorization are approved | Current role gates are visual/local and not trusted enforcement. |
+| Receipt image/OCR/payment failures | Media storage, receipt intake, OCR/extraction, and payment verification architecture are approved | Current receipt errors are local review states only. |
+| WhatsApp send/sync failures | WhatsApp backend integration, webhook strategy, and media strategy are approved | Current conversation and follow-up send states do not contact WhatsApp. |
+| Audit-log success/failure states | Audit retention and backend write contracts are approved | Current approval, receipt, order, and permission actions do not write audit records. |
+
 ## Loading State Rules
 
 - Use skeletons for lists, cards, chat messages, and receipt review.
@@ -81,4 +102,3 @@ Every MVP screen must handle the states below. Neo is an operations product, so 
 - Prioritize urgent and risky items.
 - Show stale data warnings when needed.
 - Keep repeated education minimal and dismissible.
-
