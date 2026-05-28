@@ -2,7 +2,7 @@
 
 Date: 2026-05-28
 
-Status: B04 server auth/profile bootstrap implemented locally.
+Status: B04 server auth/profile bootstrap and B06 authorization helpers implemented and deployed.
 
 ## Decision
 
@@ -31,6 +31,13 @@ Neo keeps Clerk as the Expo app auth provider. The Expo app calls Supabase Edge 
 - Do not expose Clerk secret keys in Expo.
 - Do not treat client role params or local Zustand state as authorization.
 
+## B06 Authorization Layer
+
+- Supabase Edge Functions derive the trusted role from the active `business_members` row selected through the Clerk-authenticated profile.
+- Shared permission helpers enforce owner, manager, and staff capabilities for B06 commerce and approval mutations.
+- Denied sensitive writes return a safe `PERMISSION_DENIED` envelope.
+- Sensitive allowed writes use server-owned audit log creation.
+
 ## Deferred
 
-Authoritative role checks, audit writes, Clerk webhook processing, commerce sync, WhatsApp, and AI workflows remain deferred to later backend prompts.
+Clerk webhook processing, WhatsApp, AI workflows, OCR, payment-provider verification, and signed-in B06 audit QA remain deferred to later backend work.

@@ -269,12 +269,37 @@ export function createCommerceOrder(
   });
 }
 
+export function cancelCommerceOrder(
+  client: ApiClient,
+  orderId: string,
+): Promise<ApiResult<{ order: BackendOrderDetail }>> {
+  return client.request({
+    path: `${apiEndpoints.orders}/${encodeURIComponent(orderId)}/cancel`,
+    method: "PATCH",
+    body: {},
+    parseData: parseOrderDetailEnvelope,
+  });
+}
+
 export function getCommerceOrder(
   client: ApiClient,
   orderId: string,
 ): Promise<ApiResult<{ order: BackendOrderDetail }>> {
   return client.request({
     path: `${apiEndpoints.orders}/${encodeURIComponent(orderId)}`,
+    parseData: parseOrderDetailEnvelope,
+  });
+}
+
+export function updateCommerceOrderDeliveryStatus(
+  client: ApiClient,
+  orderId: string,
+  deliveryStatus: BackendOrderDeliveryState,
+): Promise<ApiResult<{ order: BackendOrderDetail }>> {
+  return client.request({
+    path: `${apiEndpoints.orders}/${encodeURIComponent(orderId)}/delivery-status`,
+    method: "PATCH",
+    body: { deliveryStatus },
     parseData: parseOrderDetailEnvelope,
   });
 }

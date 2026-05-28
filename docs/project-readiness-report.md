@@ -1,12 +1,12 @@
 # Project Readiness Report
 
-Date: 2026-05-27
+Date: 2026-05-28
 
 ## Current Phase
 
 Neo is in the local MVP prototype and integration-readiness phase.
 
-The Expo/React Native app scaffold exists. The primary MVP screens, route groups, runtime image registry, design tokens, Clerk wiring, route guards, safe local setup/preferences persistence, typed analytics helpers, typed API/auth boundary, screen-state coverage, local-only state hardening, manual QA baseline, partial manual QA results, client release precheck, and Supabase backend foundation are implemented for local use. The app is not ready for a client release candidate or real MVP release because full signed-in Clerk/manual QA, backend-backed commerce data, WhatsApp sync, AI calls, payment verification, trusted permissions, and audit logs remain pending.
+The Expo/React Native app scaffold exists. The primary MVP screens, route groups, runtime image registry, design tokens, Clerk wiring, route guards, safe local setup/preferences persistence, typed analytics helpers, typed API/auth boundary, screen-state coverage, local-only state hardening, manual QA baseline, partial manual QA results, client release precheck, Supabase backend foundation, commerce sync, and deployed permissions/audit implementation are in place. The app is not ready for a client release candidate or real MVP release because full signed-in Clerk/manual QA, signed-in B06 audit QA, WhatsApp sync, AI calls, OCR/payment-provider verification, and remaining live workflow integrations remain pending.
 
 ## Workspace Inspection
 
@@ -51,8 +51,8 @@ The Expo/React Native app scaffold exists. The primary MVP screens, route groups
 
 - Live Clerk test-account QA for auth, setup guards, protected redirects, and sign-out clearing.
 - Full signed-in execution of the manual QA baseline.
-- Trusted server-side role enforcement for sensitive actions.
-- Feature endpoints for WhatsApp, AI, orders, receipts, payments, customers, follow-ups, audit logs, and sync.
+- Signed-in QA for B06 server-side role enforcement/audit writes.
+- Feature endpoints for WhatsApp, AI, OCR/payment-provider verification, and remaining live workflow sync.
 - Production PostHog public env values and event QA.
 - Automated unit/integration test setup, if product decides it is required before release.
 
@@ -60,7 +60,7 @@ The Expo/React Native app scaffold exists. The primary MVP screens, route groups
 
 1. Complete and record the signed-in portions of `docs/manual-qa-baseline.md` with a real Clerk test account.
 2. Keep `docs/client-release-readiness-precheck.md` and `docs/release-blockers.md` aligned after manual QA.
-3. Run B06 next using `docs/backend/permissions-audit-contract.md`; do not run B07-B08 until required auth/secrets/contracts are ready.
+3. Complete signed-in B06 QA before release; do not run B07-B08 until required auth/secrets/contracts are ready.
 4. After the client precheck blockers are closed, decide whether automated E2E tooling is required before release candidate work.
 
 ## Readiness Verdict

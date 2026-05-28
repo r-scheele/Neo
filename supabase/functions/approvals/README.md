@@ -1,9 +1,14 @@
 # approvals
 
-Status: deferred stub.
+Status: B06 server permissions/audit foundation implemented and deployed.
 
-Future scope:
-- Route AI drafts, receipt decisions, and sensitive actions through human approval.
-- Enforce owner/manager permissions server-side.
+Scope:
+- `GET /approvals` lists approval records for the authenticated business.
+- `PATCH /approvals/:approvalId/decision` records an owner/manager approval decision.
+- Staff denied-write attempts return `PERMISSION_DENIED`.
+- Allowed approval decisions write `approval.decision_recorded` audit rows.
 
-Do not implement until B02 and B06 define auth, roles, and audit behavior.
+Deferred:
+- AI draft creation and WhatsApp send execution remain in later backend prompts.
+- The Expo approvals queue still uses local fixture data until its integration prompt wires this endpoint.
+- Signed-in Clerk QA still needs to verify owner/manager approval decisions, staff denial, and audit rows before release.

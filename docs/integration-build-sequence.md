@@ -1,8 +1,8 @@
 # Integration Build Sequence
 
-Date: 2026-05-27
+Date: 2026-05-28
 
-This sequence follows the Practical Vibe Coding workflow: one focused prompt, verify, commit, continue. Phase A is complete. Backend/API implementation is Phase B; B01-B05 are complete and B06 is the next ready prompt.
+This sequence follows the Practical Vibe Coding workflow: one focused prompt, verify, commit, continue. Phase A is complete. Backend/API implementation is Phase B; B01-B06 are complete.
 
 ## Current Active Sequence
 
@@ -12,7 +12,7 @@ This sequence follows the Practical Vibe Coding workflow: one focused prompt, ve
 - B03 database schema readiness is complete.
 - B04 server auth/profile bootstrap is complete.
 - B05 commerce records backend sync is complete.
-- Run B06 next using the approved permissions/audit contract in `docs/backend/permissions-audit-contract.md`.
+- B06 server-side permissions and audit logs are complete and deployed; signed-in QA is still required before release.
 - Do not run B07-B08 yet.
 - Prompt 05 AsyncStorage persistence completion is complete.
 - Prompt 06 Backend/API boundary is complete as a documentation-only boundary.
@@ -23,7 +23,7 @@ This sequence follows the Practical Vibe Coding workflow: one focused prompt, ve
 - Prompt 11 Maestro/QA baseline is complete as a manual QA baseline because Maestro was unavailable and not installed.
 - Prompt 12 Client release readiness precheck is complete and found the client is not release-ready yet.
 - Backend B01 Supabase foundation is complete.
-- Backend feature implementation has started; WhatsApp, AI, permissions/audit, OCR, and payment-provider work remain deferred.
+- Backend feature implementation has started; WhatsApp, AI, OCR, and payment-provider work remain deferred.
 
 ## Phase A: Runnable Client/Local Prompts
 
@@ -53,7 +53,7 @@ Phase B lives in `docs/integration-prompts/backend-deferred/`.
 | B03 | Database schema readiness | Complete | Local migration verified; remote schema pushed. |
 | B04 | Server auth and profile bootstrap | Complete | Requires B03 and Clerk verification secrets/strategy. |
 | B05 | Commerce records backend sync | Complete | Requires B03-B04 and reviewed/pushed durable records schema. |
-| B06 | Server-side permissions and audit logs | Ready | Requires B04-B05 plus the approved permissions/audit contract and retention policy. |
+| B06 | Server-side permissions and audit logs | Complete and deployed; signed-in QA pending | Requires B04-B05 plus the approved permissions/audit contract and retention policy. |
 | B07 | WhatsApp workflow integration | Deferred | Requires B04 plus WhatsApp token/webhook/media secrets and endpoint contracts. |
 | B08 | AI draft generation backend | Deferred | Requires B04 plus AI provider secret and server-side prompt policy. |
 

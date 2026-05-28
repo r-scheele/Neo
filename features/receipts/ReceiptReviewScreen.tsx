@@ -1191,13 +1191,15 @@ export function ReceiptReviewScreen({
   }
 
   const effectiveRole = screenState === "permission" ? "staff" : mockRole;
+  const isBackendReceipt = isBackendRecordId(receipt.id);
   const decisionsDisabled = screenState === "offline";
   const decisionsBlockedByRole =
     screenState === "permission" ||
-    !canPerformSensitiveAction({
-      action: "receipt-decision",
-      role: effectiveRole,
-    });
+    (!isBackendReceipt &&
+      !canPerformSensitiveAction({
+        action: "receipt-decision",
+        role: effectiveRole,
+      }));
   const permissionHref = getPermissionDeniedHref({
     action: "receipt-decision",
     role: effectiveRole,
@@ -1251,6 +1253,16 @@ export function ReceiptReviewScreen({
     setIsSavingDecision(false);
 
     if (!result.ok) {
+      if (result.error.category === "permission_denied") {
+        router.push(
+          getPermissionDeniedHref({
+            action: "receipt-decision",
+            role: roleFromPermissionDetails(result.error.details.role),
+          }),
+        );
+        return;
+      }
+
       setNotice({
         message: result.error.message,
         title: "Receipt decision could not save",
@@ -1365,4 +1377,12 @@ function getBackendReceiptDecision(
 
 function isBackendRecordId(recordId: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(recordId);
+}
+
+function roleFromPermissionDetails(value: unknown): MockStaffRole {
+  if (value === "owner" || value === "manager" || value === "staff") {
+    return value;
+  }
+
+  return "staff";
 }

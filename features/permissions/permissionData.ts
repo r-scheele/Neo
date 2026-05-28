@@ -12,6 +12,7 @@ export type MockStaffRole = "owner" | "manager" | "staff";
 
 export type SensitivePermissionAction =
   | "approval-decision"
+  | "order-change"
   | "receipt-decision"
   | "safety-settings";
 
@@ -59,6 +60,14 @@ export const permissionActionDetails: Record<
     id: "approval-decision",
     restrictedLabel: "Approval required",
   },
+  "order-change": {
+    actionLabel: "Change order status",
+    description:
+      "Cancel orders, update delivery status, or change other sensitive order state.",
+    icon: images.iconOrder,
+    id: "order-change",
+    restrictedLabel: "Owner or manager",
+  },
   "receipt-decision": {
     actionLabel: "Review payment receipt",
     description:
@@ -105,6 +114,7 @@ export function getPermissionAction(
 
   if (
     action === "approval-decision" ||
+    action === "order-change" ||
     action === "receipt-decision" ||
     action === "safety-settings"
   ) {
@@ -121,7 +131,11 @@ export function canPerformSensitiveAction({
   action: SensitivePermissionAction;
   role: MockStaffRole;
 }) {
-  if (action === "approval-decision" || action === "receipt-decision") {
+  if (
+    action === "approval-decision" ||
+    action === "order-change" ||
+    action === "receipt-decision"
+  ) {
     return role === "owner" || role === "manager";
   }
 

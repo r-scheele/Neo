@@ -2,7 +2,7 @@
 
 Date: 2026-05-28
 
-Status: approved response envelope; B02 client parser exists; B04 auth bootstrap endpoints exist; B05 commerce endpoints are implemented and deployed.
+Status: approved response envelope; B02 client parser exists; B04 auth bootstrap endpoints exist; B05 commerce endpoints and B06 permissions/audit mutations are implemented and deployed.
 
 Base URL env var:
 
@@ -235,7 +235,7 @@ Allowed decisions:
 - `rejected_mismatch`
 - `unreadable`
 
-This endpoint must not auto-confirm payment from screenshot extraction alone. `approved_after_bank_check` requires a deliberate human review action. B06 must enforce the receipt-review permission and write `receipt.review_decision_recorded` according to `docs/backend/permissions-audit-contract.md`.
+This endpoint must not auto-confirm payment from screenshot extraction alone. `approved_after_bank_check` requires a deliberate human review action. B06 enforces the receipt-review permission and writes `receipt.review_decision_recorded` according to `docs/backend/permissions-audit-contract.md`; signed-in QA is still required before release.
 
 `GET /receipts?reviewStatus=&limit=&cursor=`
 

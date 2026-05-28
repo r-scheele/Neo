@@ -1,7 +1,7 @@
 # B06 Server-Side Permissions And Audit Logs Prompt
 
 Status:
-Ready. B04 server auth/profile bootstrap and B05 commerce records backend sync are complete, and the trusted role source, role/action matrix, audit event contract, denied-write contract, and audit retention target are approved in `docs/backend/permissions-audit-contract.md` and `docs/backend/audit-log-retention.md`.
+Complete and deployed. B04 server auth/profile bootstrap and B05 commerce records backend sync are complete, and B06 added server-side permissions plus audit writes for current commerce and approval mutations. Signed-in Clerk QA is still required before release to confirm owner/manager/staff behavior and audit rows.
 
 Do not run this prompt until:
 - B04 server auth/profile bootstrap is complete
@@ -12,7 +12,7 @@ Do not run this prompt until:
 
 ## When to run this prompt
 
-Run after B05. The backend contract for roles, permissions, denied writes, and audit log creation is approved.
+This prompt has been run and deployed. Re-run only for targeted fixes after reviewing the current implementation, deployment state, and signed-in QA results.
 
 ## What this prompt will do
 
