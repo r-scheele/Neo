@@ -1,6 +1,7 @@
 import type { ImageSourcePropType } from "react-native";
 
 import { images } from "@/constants/images";
+import type { BackendReceiptReview } from "@/lib/api";
 
 // DEV-ONLY FIXTURE DATA: replace with backend-backed receipt review records before release.
 export type ReceiptRiskLevel = "low" | "medium" | "high";
@@ -182,4 +183,53 @@ export function getReceiptReviewById(
   }
 
   return receiptReviewRecords[receiptId] ?? null;
+}
+
+export function normalizeBackendReceiptReview(
+  receipt: BackendReceiptReview,
+): ReceiptReviewRecord {
+  return {
+    confidence: receipt.confidence,
+    conversationId: receipt.conversationId,
+    customerInitials: receipt.customerInitials,
+    customerName: receipt.customerName,
+    expectedAmount: receipt.expectedAmount,
+    extractedAmount: receipt.extractedAmount,
+    extractedRows: receipt.extractedRows.map((row) => ({
+      ...row,
+      icon: getReceiptRowIcon(row.id, row.status),
+    })),
+    id: receipt.id,
+    orderDisplayId: receipt.orderDisplayId,
+    orderRouteId: receipt.orderRouteId,
+    placedAt: receipt.placedAt,
+    previewLines: receipt.previewLines,
+    previewSubtitle: receipt.previewSubtitle,
+    previewTitle: receipt.previewTitle,
+    riskLabel: receipt.riskLabel,
+    riskLevel: receipt.riskLevel,
+    state: receipt.state,
+    statusLabel: receipt.statusLabel,
+    submittedAt: receipt.submittedAt,
+    warningLines: receipt.warningLines,
+  };
+}
+
+function getReceiptRowIcon(
+  rowId: string,
+  status: ReceiptRowStatus,
+): ImageSourcePropType {
+  if (status === "unreadable" || status === "mismatch") {
+    return images.iconWarning;
+  }
+
+  if (rowId.includes("amount")) {
+    return images.iconPaid;
+  }
+
+  if (rowId.includes("source") || rowId.includes("receipt")) {
+    return images.iconReceiptReview;
+  }
+
+  return images.iconOrder;
 }

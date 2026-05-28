@@ -2,7 +2,7 @@
 
 Date: 2026-05-28
 
-Status: approved response envelope; B02 client parser exists; B04 auth bootstrap endpoints exist locally; B05 commerce endpoint contracts approved.
+Status: approved response envelope; B02 client parser exists; B04 auth bootstrap endpoints exist; B05 commerce endpoints are implemented and deployed.
 
 Base URL env var:
 
@@ -52,11 +52,15 @@ Failure:
 - `media-sign-upload`
 - `clerk-webhook`
 
-Implemented locally:
+Implemented:
 
 - `health`: safe foundation status.
 - `me-bootstrap`: authenticated profile/business context bootstrap.
 - `setup-business`: minimal first-business/owner-membership bootstrap.
+- `orders`: create/list/detail order records and Today commerce counts.
+- `customers`: customer profile, customer list, and safe customer creation.
+- `receipts`: receipt review detail/list and human receipt review decision updates.
+- `follow-ups`: follow-up queue/list, complete, and reschedule actions.
 
 Other function folders return safe deferred errors until their matching Phase B prompt is implemented.
 
@@ -231,7 +235,7 @@ Allowed decisions:
 - `rejected_mismatch`
 - `unreadable`
 
-This endpoint must not auto-confirm payment from screenshot extraction alone. `approved_after_bank_check` requires a deliberate human review action and must leave audit enforcement to B06 if audit writes are not implemented yet.
+This endpoint must not auto-confirm payment from screenshot extraction alone. `approved_after_bank_check` requires a deliberate human review action. B06 must enforce the receipt-review permission and write `receipt.review_decision_recorded` according to `docs/backend/permissions-audit-contract.md`.
 
 `GET /receipts?reviewStatus=&limit=&cursor=`
 

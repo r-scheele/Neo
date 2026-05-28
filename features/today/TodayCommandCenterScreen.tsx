@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Image, useWindowDimensions } from "react-native";
 import type { Href } from "expo-router";
 
@@ -12,6 +12,7 @@ import {
   trackAnalyticsEvent,
   trackScreenStateSeen,
 } from "@/lib/analytics";
+import { getTodaySummary, useApiClient } from "@/lib/api";
 import { Link, Pressable, ScrollView, Text, View } from "@/src/tw";
 import { useConnectivityStore } from "@/stores/useConnectivityStore";
 import { useOperationsStore } from "@/stores/useOperationsStore";
@@ -28,6 +29,7 @@ import {
   activeDashboard,
   emptyDashboard,
   getTodayUrgentAttentionCount,
+  normalizeBackendTodayDashboard,
 } from "./todayCommandData";
 
 type TodayViewState = "ready" | "loading" | "error";
@@ -591,6 +593,7 @@ export function TodayCommandCenterScreen({
 }: {
   initialState?: MockScreenState;
 }) {
+  const apiClient = useApiClient();
   const { height, width } = useWindowDimensions();
   const isCompactPhone = height < 760 || width < 430;
   const horizontalPadding = width >= 390 ? 20 : 16;
@@ -603,30 +606,48 @@ export function TodayCommandCenterScreen({
   const isOnline = useConnectivityStore((store) => store.isOnline);
   const lastSyncedLabel = useConnectivityStore((store) => store.lastSyncedLabel);
   const markSynced = useConnectivityStore((store) => store.markSynced);
+  const isOffline = initialState === "offline" || !isOnline;
   const [viewState, setViewState] = useState<TodayViewState>(
     initialState === "loading" || initialState === "error"
       ? initialState
-      : "ready",
+      : initialState === "ready" && !isOffline
+        ? "loading"
+        : "ready",
   );
-  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isOffline = initialState === "offline" || !isOnline;
+  const [dashboard, setDashboard] = useState<TodayDashboard>(
+    initialState === "empty" ? emptyDashboard : activeDashboard,
+  );
+  const [reloadVersion, setReloadVersion] = useState(0);
   const isPermissionLimited = initialState === "permission";
-  const dashboard =
-    initialState === "empty"
-      ? emptyDashboard
-      : activeDashboard.queueItems.length > 0
-        ? activeDashboard
-        : emptyDashboard;
   const queueCount = dashboard.queueItems.length;
   const hasUrgentItems = dashboard.queueItems.some((item) => item.priority === "high");
 
   useEffect(() => {
-    return () => {
-      if (refreshTimerRef.current) {
-        clearTimeout(refreshTimerRef.current);
+    if (initialState !== "ready" || isOffline) {
+      return;
+    }
+
+    let isActive = true;
+
+    getTodaySummary(apiClient).then((result) => {
+      if (!isActive) {
+        return;
       }
+
+      if (result.ok) {
+        setDashboard(normalizeBackendTodayDashboard(result.data));
+        setViewState("ready");
+        markSynced();
+        return;
+      }
+
+      setViewState("error");
+    });
+
+    return () => {
+      isActive = false;
     };
-  }, []);
+  }, [apiClient, initialState, isOffline, markSynced, reloadVersion]);
 
   useEffect(() => {
     trackAnalyticsEvent("today_viewed", {
@@ -648,15 +669,11 @@ export function TodayCommandCenterScreen({
   }, [dashboard, initialState, setTodayUrgentCount]);
 
   function refreshTodayQueue() {
-    if (refreshTimerRef.current) {
-      clearTimeout(refreshTimerRef.current);
+    if (!isOffline) {
+      setViewState("loading");
     }
 
-    setViewState("loading");
-    refreshTimerRef.current = setTimeout(() => {
-      setViewState("ready");
-      markSynced();
-    }, 450);
+    setReloadVersion((currentValue) => currentValue + 1);
   }
 
   return (

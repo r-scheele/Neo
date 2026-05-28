@@ -60,7 +60,7 @@ The Expo/React Native app scaffold exists. The primary MVP screens, route groups
 
 1. Complete and record the signed-in portions of `docs/manual-qa-baseline.md` with a real Clerk test account.
 2. Keep `docs/client-release-readiness-precheck.md` and `docs/release-blockers.md` aligned after manual QA.
-3. Run B04 next for server auth/profile bootstrap if Clerk server verification inputs are ready; do not run B05-B08 until required auth/secrets/contracts are ready.
+3. Run B06 next using `docs/backend/permissions-audit-contract.md`; do not run B07-B08 until required auth/secrets/contracts are ready.
 4. After the client precheck blockers are closed, decide whether automated E2E tooling is required before release candidate work.
 
 ## Readiness Verdict

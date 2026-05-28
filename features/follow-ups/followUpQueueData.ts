@@ -1,6 +1,7 @@
 import type { ImageSourcePropType } from "react-native";
 
 import { images } from "@/constants/images";
+import type { BackendFollowUpQueueItem } from "@/lib/api";
 
 // DEV-ONLY FIXTURE DATA: replace with backend-backed follow-up records before release.
 export type FollowUpFilter = "all" | "due" | "overdue" | "suggested" | "done";
@@ -188,4 +189,30 @@ export function filterFollowUps({
   }
 
   return items.filter((item) => item.status === filter);
+}
+
+export function normalizeBackendFollowUp(
+  item: BackendFollowUpQueueItem,
+): FollowUpQueueItem {
+  return {
+    amount: item.amount,
+    completedLabel: item.completedLabel,
+    conversationId: item.conversationId,
+    customerInitials: item.customerInitials,
+    customerName: item.customerName,
+    detailLines: item.detailLines,
+    dueLabel: item.dueLabel,
+    dueMetaLabel: item.dueMetaLabel,
+    id: item.id,
+    isHighPriority: item.isHighPriority,
+    kindLabel: item.kindLabel,
+    lastActivityLabel: item.lastActivityLabel,
+    orderDisplayId: item.orderDisplayId,
+    orderRouteId: item.orderRouteId,
+    status: item.status,
+    suggestedMessage: item.suggestedMessage,
+    targetLabel: item.targetLabel,
+    targetType: item.targetType,
+    tone: item.tone,
+  };
 }

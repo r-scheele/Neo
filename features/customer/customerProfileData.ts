@@ -1,6 +1,7 @@
 import type { ImageSourcePropType } from "react-native";
 
 import { images } from "@/constants/images";
+import type { BackendCustomerProfile } from "@/lib/api";
 
 // DEV-ONLY FIXTURE DATA: replace with backend-backed customer records before release.
 export type CustomerStatusTone = "success" | "warning" | "info" | "neutral";
@@ -338,4 +339,106 @@ export function getCustomerProfileById(
   }
 
   return customerProfiles[customerId] ?? null;
+}
+
+export function normalizeBackendCustomerProfile(
+  customer: BackendCustomerProfile,
+): CustomerProfileRecord {
+  return {
+    activity: customer.activity.map((activity) => ({
+      ...activity,
+      icon: getCustomerActivityIcon(activity.title),
+    })),
+    avatarTone: normalizeCustomerTone(customer.avatarTone),
+    conversationId: customer.conversationId,
+    customerInitials: customer.customerInitials,
+    customerName: customer.customerName,
+    customerSince: customer.customerSince,
+    id: customer.id,
+    latestOrderHref: customer.latestOrderHref,
+    locationLabel: customer.locationLabel,
+    metrics: [
+      {
+        detail: customer.metrics.lastOrder
+          ? formatCustomerNaira(customer.metrics.lastOrder.amount)
+          : undefined,
+        icon: images.iconOrder,
+        id: "last-order",
+        label: "Last order",
+        status: customer.metrics.lastOrder?.status,
+        value: customer.metrics.lastOrder?.dateLabel ?? "No orders yet",
+      },
+      {
+        icon: images.iconFollowUps,
+        id: "next-follow-up",
+        label: "Next follow-up",
+        value: customer.metrics.nextFollowUp,
+      },
+      {
+        detail:
+          customer.metrics.outstandingAmount > 0 ? "Unpaid" : "Clear",
+        icon: images.iconPaid,
+        id: "outstanding",
+        label: "Outstanding",
+        status: customer.metrics.outstandingAmount > 0 ? "unpaid" : "paid",
+        value: formatCustomerNaira(customer.metrics.outstandingAmount),
+      },
+      {
+        icon: images.iconPermission,
+        id: "total-spend",
+        label: "Total spend",
+        value: formatCustomerNaira(customer.metrics.totalSpend),
+      },
+    ],
+    notes: customer.notes,
+    orderCount: customer.orderCount,
+    orders: customer.orders,
+    preferences: [
+      {
+        icon: images.iconDelivery,
+        id: "preferred-area",
+        label: "Preferred area",
+        value: customer.preferences.deliveryArea,
+      },
+      {
+        icon: images.iconProduct,
+        id: "favorite-categories",
+        label: "Favorite categories",
+        value: customer.preferences.favoriteCategories,
+      },
+      {
+        icon: images.iconPaid,
+        id: "payment-time",
+        label: "Payment time",
+        value: customer.preferences.paymentTime,
+      },
+    ],
+    primaryPreference: customer.primaryPreference,
+    statusLabel: customer.statusLabel,
+    statusTone: normalizeCustomerTone(customer.statusTone),
+  };
+}
+
+function normalizeCustomerTone(
+  tone: BackendCustomerProfile["statusTone"],
+): CustomerStatusTone {
+  if (tone === "error") {
+    return "warning";
+  }
+
+  return tone;
+}
+
+function getCustomerActivityIcon(title: string): ImageSourcePropType {
+  const normalizedTitle = title.toLowerCase();
+
+  if (normalizedTitle.includes("follow")) {
+    return images.iconFollowUps;
+  }
+
+  if (normalizedTitle.includes("order")) {
+    return images.iconOrder;
+  }
+
+  return images.iconInbox;
 }

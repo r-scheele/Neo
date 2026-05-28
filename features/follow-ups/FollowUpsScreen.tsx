@@ -11,6 +11,12 @@ import {
 } from "@/components/feedback/ScreenState";
 import { colors } from "@/constants/colors";
 import { images } from "@/constants/images";
+import {
+  completeFollowUp,
+  getFollowUps,
+  rescheduleFollowUp as rescheduleBackendFollowUp,
+  useApiClient,
+} from "@/lib/api";
 import { trackAnalyticsEvent, trackScreenStateSeen } from "@/lib/analytics";
 import { Link, Pressable, ScrollView, Text, TextInput, View } from "@/src/tw";
 import { useOperationsStore } from "@/stores/useOperationsStore";
@@ -27,6 +33,7 @@ import {
   formatFollowUpNaira,
   getFollowUpCounts,
   initialFollowUps,
+  normalizeBackendFollowUp,
 } from "./followUpQueueData";
 
 type NoticeTone = "info" | "success" | "warning";
@@ -781,6 +788,7 @@ export function FollowUpsScreen({
 }: {
   initialState?: MockScreenState;
 }) {
+  const apiClient = useApiClient();
   const { height, width } = useWindowDimensions();
   const isCompactPhone = height < 760 || width < 380;
   const horizontalPadding = width >= 390 ? 20 : 16;
@@ -794,9 +802,12 @@ export function FollowUpsScreen({
     useState<readonly FollowUpQueueItem[]>(
       initialState === "empty" ? [] : initialFollowUps,
     );
-  const [screenState, setScreenState] = useState<MockScreenState>(initialState);
+  const [screenState, setScreenState] = useState<MockScreenState>(() =>
+    initialState === "ready" ? "loading" : initialState,
+  );
   const [notice, setNotice] = useState<Notice | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [reloadVersion, setReloadVersion] = useState(0);
 
   const counts = useMemo(() => getFollowUpCounts(followUps), [followUps]);
   const visibleFollowUps = useMemo(
@@ -806,6 +817,38 @@ export function FollowUpsScreen({
   const activeCount = counts.all - counts.done;
   const actionsDisabled =
     screenState === "offline" || screenState === "permission";
+
+  useEffect(() => {
+    if (initialState !== "ready") {
+      return;
+    }
+
+    let isActive = true;
+
+    getFollowUps(apiClient).then((result) => {
+      if (!isActive) {
+        return;
+      }
+
+      if (result.ok) {
+        setFollowUps(result.data.followUps.map(normalizeBackendFollowUp));
+        setNotice(null);
+        setScreenState("ready");
+        return;
+      }
+
+      setNotice({
+        message: `${result.error.message} Showing the isolated demo queue instead.`,
+        title: "Backend follow-ups unavailable",
+        tone: "warning",
+      });
+      setScreenState("ready");
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [apiClient, initialState, reloadVersion]);
 
   useEffect(() => {
     trackScreenStateSeen({
@@ -846,8 +889,11 @@ export function FollowUpsScreen({
         <StateCard
           actionLabel="Retry follow-ups"
           image={images.errorOffline}
-          message="The follow-up queue could not load. Retry restores the local demo queue."
-          onAction={() => setScreenState("ready")}
+          message="The follow-up queue could not load. Retry asks the backend commerce records API again."
+          onAction={() => {
+            setScreenState("loading");
+            setReloadVersion((currentValue) => currentValue + 1);
+          }}
           title="Could not load follow-ups"
         />
       </View>
@@ -910,7 +956,31 @@ export function FollowUpsScreen({
     setSuccessMessage(null);
   }
 
-  function markDone(item: FollowUpQueueItem) {
+  async function markDone(item: FollowUpQueueItem) {
+    if (isBackendRecordId(item.id)) {
+      const result = await completeFollowUp(apiClient, item.id);
+
+      if (!result.ok) {
+        setNotice({
+          message: result.error.message,
+          title: "Follow-up could not update",
+          tone: "warning",
+        });
+        setSuccessMessage(null);
+        return;
+      }
+
+      updateFollowUp(item.id, () => normalizeBackendFollowUp(result.data.followUp));
+      setEditingId(null);
+      setNotice({
+        message: "Follow-up completion was saved to the backend record.",
+        title: "Follow-up marked done",
+        tone: "success",
+      });
+      setSuccessMessage(null);
+      return;
+    }
+
     updateFollowUp(item.id, (currentItem) => ({
       ...currentItem,
       completedLabel: "Marked done just now",
@@ -922,14 +992,14 @@ export function FollowUpsScreen({
     setEditingId(null);
     setNotice({
       message:
-        "Marked done in this mock queue only. No customer message or backend record was changed.",
+        "Marked done in the isolated demo queue only. Backend records need a durable follow-up ID.",
       title: "Follow-up marked done locally",
       tone: "success",
     });
     setSuccessMessage(null);
   }
 
-  function sendFollowUp(item: FollowUpQueueItem) {
+  async function sendFollowUp(item: FollowUpQueueItem) {
     const draft = getDraft(item).trim();
 
     if (!draft) {
@@ -938,6 +1008,31 @@ export function FollowUpsScreen({
         title: "Message cannot be empty",
         tone: "warning",
       });
+      return;
+    }
+
+    if (isBackendRecordId(item.id)) {
+      const result = await completeFollowUp(apiClient, item.id);
+
+      if (!result.ok) {
+        setNotice({
+          message: result.error.message,
+          title: "Follow-up could not update",
+          tone: "warning",
+        });
+        setSuccessMessage(null);
+        return;
+      }
+
+      updateFollowUp(item.id, () => ({
+        ...normalizeBackendFollowUp(result.data.followUp),
+        suggestedMessage: draft,
+      }));
+      setEditingId(null);
+      setNotice(null);
+      setSuccessMessage(
+        "Follow-up was marked complete in backend records. No WhatsApp message was sent in B05.",
+      );
       return;
     }
 
@@ -953,14 +1048,39 @@ export function FollowUpsScreen({
     setEditingId(null);
     setNotice(null);
     setSuccessMessage(
-      "No WhatsApp message was sent. This only updates the local demo queue.",
+      "No WhatsApp message was sent. This only updates the isolated demo queue.",
     );
   }
 
-  function rescheduleFollowUp(item: FollowUpQueueItem) {
+  async function rescheduleFollowUp(item: FollowUpQueueItem) {
+    if (isBackendRecordId(item.id)) {
+      const dueAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      const result = await rescheduleBackendFollowUp(apiClient, item.id, dueAt);
+
+      if (!result.ok) {
+        setNotice({
+          message: result.error.message,
+          title: "Follow-up could not reschedule",
+          tone: "warning",
+        });
+        setSuccessMessage(null);
+        return;
+      }
+
+      updateFollowUp(item.id, () => normalizeBackendFollowUp(result.data.followUp));
+      setNotice({
+        message:
+          "Follow-up was rescheduled to tomorrow in backend records. No customer message was sent.",
+        title: `Rescheduled ${item.customerName}`,
+        tone: "success",
+      });
+      setSuccessMessage(null);
+      return;
+    }
+
     setNotice({
       message:
-        "Rescheduling is local-only for this screen. A real reminder schedule needs backend sync later.",
+        "Rescheduling is local-only for this demo item. Backend records need a durable follow-up ID.",
       title: `Reschedule ${item.customerName}`,
       tone: "info",
     });
@@ -1052,4 +1172,8 @@ export function FollowUpsScreen({
       </View>
     </ScrollView>
   );
+}
+
+function isBackendRecordId(recordId: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(recordId);
 }

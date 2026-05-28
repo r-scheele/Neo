@@ -1,9 +1,12 @@
 # orders
 
-Status: deferred stub.
+Status: B05 implemented and deployed.
 
-Future scope:
-- Create, read, and update server-owned orders and order items.
-- Validate totals server-side and audit sensitive order state changes.
+Current scope:
+- Create backend-owned orders and order items for the active business.
+- Read order detail and order summaries.
+- Return Today commerce counts from backend records.
+- Keep payment review human-led; receipt screenshots are never auto-confirmed.
 
-Do not implement until B05 defines commerce sync contracts.
+Future B06 scope:
+- Enforce role-specific permissions and write audit logs for sensitive order changes.

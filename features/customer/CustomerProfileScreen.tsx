@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ImageSourcePropType } from "react-native";
 import { Image, useWindowDimensions } from "react-native";
 import type { Href } from "expo-router";
@@ -13,6 +13,7 @@ import {
 } from "@/components/feedback/ScreenState";
 import { colors } from "@/constants/colors";
 import { images } from "@/constants/images";
+import { getCustomerProfile, useApiClient } from "@/lib/api";
 import { Link, Pressable, ScrollView, Text, TextInput, View } from "@/src/tw";
 
 import type {
@@ -28,6 +29,7 @@ import type {
 import {
   formatCustomerNaira,
   getCustomerProfileById,
+  normalizeBackendCustomerProfile,
 } from "./customerProfileData";
 
 type ProfileTab = "summary" | "orders" | "notes" | "activity";
@@ -977,15 +979,67 @@ export function CustomerProfileScreen({
   customerId?: string;
   initialState?: MockScreenState;
 }) {
+  const apiClient = useApiClient();
   const { height, width } = useWindowDimensions();
   const isCompactPhone = height < 760 || width < 430;
   const horizontalPadding = width >= 390 ? 20 : 16;
-  const customer = useMemo(() => getCustomerProfileById(customerId), [customerId]);
+  const localCustomer = useMemo(
+    () => getCustomerProfileById(customerId),
+    [customerId],
+  );
+  const [backendCustomer, setBackendCustomer] =
+    useState<CustomerProfileRecord | null>(null);
+  const [reloadVersion, setReloadVersion] = useState(0);
   const [activeTab, setActiveTab] = useState<ProfileTab>("summary");
-  const [currentState, setCurrentState] = useState<MockScreenState>(initialState);
+  const [currentState, setCurrentState] = useState<MockScreenState>(() =>
+    initialState === "ready" &&
+    customerId &&
+    isBackendRecordId(customerId) &&
+    !localCustomer
+      ? "loading"
+      : initialState,
+  );
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [localNote, setLocalNote] = useState("");
   const [notice, setNotice] = useState<Notice | null>(null);
+  const customer = backendCustomer ?? localCustomer;
+
+  useEffect(() => {
+    if (!customerId || initialState !== "ready" || !isBackendRecordId(customerId)) {
+      return;
+    }
+
+    let isActive = true;
+
+    getCustomerProfile(apiClient, customerId).then((result) => {
+      if (!isActive) {
+        return;
+      }
+
+      if (result.ok) {
+        setBackendCustomer(normalizeBackendCustomerProfile(result.data.customer));
+        setNotice(null);
+        setCurrentState("ready");
+        return;
+      }
+
+      if (localCustomer) {
+        setNotice({
+          message: `${result.error.message} Showing the isolated demo customer instead.`,
+          title: "Backend customer unavailable",
+        });
+        setCurrentState("ready");
+        return;
+      }
+
+      setNotice(null);
+      setCurrentState("error");
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [apiClient, customerId, initialState, localCustomer, reloadVersion]);
 
   if (currentState === "loading") {
     return (
@@ -1002,8 +1056,14 @@ export function CustomerProfileScreen({
         <StateCard
           actionLabel="Retry profile"
           image={images.errorOffline}
-          message="The customer profile could not load. Retry restores local mock data."
-          onAction={() => setCurrentState("ready")}
+          message="The backend customer profile could not load. Retry asks the commerce records API again."
+          onAction={() => {
+            if (customerId && isBackendRecordId(customerId) && !localCustomer) {
+              setCurrentState("loading");
+            }
+
+            setReloadVersion((currentValue) => currentValue + 1);
+          }}
           title="Could not load customer"
         />
       </View>
@@ -1136,4 +1196,8 @@ export function CustomerProfileScreen({
       </View>
     </ScrollView>
   );
+}
+
+function isBackendRecordId(recordId: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(recordId);
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ImageSourcePropType } from "react-native";
 import { Image, useWindowDimensions } from "react-native";
 import type { Href } from "expo-router";
@@ -12,6 +12,7 @@ import {
 } from "@/components/feedback/ScreenState";
 import { colors } from "@/constants/colors";
 import { images } from "@/constants/images";
+import { getCommerceOrder, useApiClient } from "@/lib/api";
 import { Link, Pressable, ScrollView, Text, View } from "@/src/tw";
 
 import type {
@@ -26,6 +27,7 @@ import {
   calculateOrderTotals,
   formatOrderNaira,
   getOrderDetailById,
+  normalizeBackendOrderDetail,
 } from "./orderDetailData";
 
 type Notice = {
@@ -886,14 +888,70 @@ export function OrderDetailScreen({
   initialState?: MockScreenState;
   orderId?: string;
 }) {
+  const apiClient = useApiClient();
   const router = useRouter();
   const { height, width } = useWindowDimensions();
   const isCompactPhone = height < 760 || width < 380;
   const horizontalPadding = width >= 390 ? 20 : 16;
   const useStackedMetrics = width < 410;
-  const order = useMemo(() => getOrderDetailById(orderId), [orderId]);
-  const [screenState, setScreenState] = useState<MockScreenState>(initialState);
+  const localOrder = useMemo(() => getOrderDetailById(orderId), [orderId]);
+  const [backendOrder, setBackendOrder] = useState<OrderDetailRecord | null>(null);
+  const [reloadVersion, setReloadVersion] = useState(0);
+  const [screenState, setScreenState] = useState<MockScreenState>(() =>
+    initialState === "ready" &&
+    orderId &&
+    isBackendRecordId(orderId) &&
+    !localOrder
+      ? "loading"
+      : initialState,
+  );
   const [notice, setNotice] = useState<Notice | null>(null);
+  const order = backendOrder ?? localOrder;
+
+  useEffect(() => {
+    if (!orderId || initialState !== "ready" || !isBackendRecordId(orderId)) {
+      return;
+    }
+
+    let isActive = true;
+
+    getCommerceOrder(apiClient, orderId).then((result) => {
+      if (!isActive) {
+        return;
+      }
+
+      if (result.ok) {
+        setBackendOrder(normalizeBackendOrderDetail(result.data.order));
+        setNotice(null);
+        setScreenState("ready");
+        return;
+      }
+
+      if (localOrder) {
+        setNotice({
+          message: `${result.error.message} Showing the isolated demo order instead.`,
+          title: "Backend order unavailable",
+        });
+        setScreenState("ready");
+        return;
+      }
+
+      setNotice(null);
+      setScreenState("error");
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [apiClient, initialState, localOrder, orderId, reloadVersion]);
+
+  function retryOrderLoad() {
+    if (orderId && isBackendRecordId(orderId) && !localOrder) {
+      setScreenState("loading");
+    }
+
+    setReloadVersion((currentValue) => currentValue + 1);
+  }
 
   if (screenState === "loading") {
     return (
@@ -921,8 +979,8 @@ export function OrderDetailScreen({
         <StateCard
           actionLabel="Retry order"
           image={images.errorOffline}
-          message="The order could not load. Retry restores the local cached order view when available."
-          onAction={() => setScreenState("ready")}
+          message="The backend order could not load. Retry will ask the commerce records API again."
+          onAction={retryOrderLoad}
           title="Could not load order"
         />
       </View>
@@ -1019,4 +1077,8 @@ export function OrderDetailScreen({
       </View>
     </ScrollView>
   );
+}
+
+function isBackendRecordId(recordId: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(recordId);
 }

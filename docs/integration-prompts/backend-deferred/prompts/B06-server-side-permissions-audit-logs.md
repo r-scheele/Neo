@@ -1,18 +1,18 @@
 # B06 Server-Side Permissions And Audit Logs Prompt
 
 Status:
-Deferred until B04 server auth/profile bootstrap and B05 commerce records backend sync are complete.
+Ready. B04 server auth/profile bootstrap and B05 commerce records backend sync are complete, and the trusted role source, role/action matrix, audit event contract, denied-write contract, and audit retention target are approved in `docs/backend/permissions-audit-contract.md` and `docs/backend/audit-log-retention.md`.
 
 Do not run this prompt until:
 - B04 server auth/profile bootstrap is complete
 - B05 commerce records backend sync is complete
-- trusted role source is implemented
+- trusted role source contract is approved
 - audit write contract is approved
 - audit retention policy is confirmed
 
 ## When to run this prompt
 
-Run after B05. This prompt requires a backend contract for roles, permissions, denied writes, and audit log creation.
+Run after B05. The backend contract for roles, permissions, denied writes, and audit log creation is approved.
 
 ## What this prompt will do
 
@@ -34,6 +34,8 @@ Before coding/configuring, verify that these required files exist:
 - docs/release-blockers.md
 - docs/security-and-secrets-plan.md
 - docs/auth-plan.md
+- docs/backend/permissions-audit-contract.md
+- docs/backend/audit-log-retention.md
 - features/permissions/PermissionDeniedScreen.tsx
 - features/permissions/permissionData.ts
 - features/approvals/ApprovalQueueScreen.tsx
@@ -51,12 +53,13 @@ Task:
 Implement only server-side permissions and audit logs.
 
 Scope:
-- Consume trusted role/permission data from Clerk/backend according to the approved backend contract.
+- Consume trusted role/permission data from Clerk/backend according to `docs/backend/permissions-audit-contract.md`.
 - Remove or isolate mock `role` query-param behavior from production paths.
 - Require server authorization for sensitive approval, receipt, payment, order cancellation, delivery update, and settings actions.
 - Show permission denied UI from real denied-write responses.
 - Record or rely on backend audit log creation for sensitive actions.
 - Keep client-side role checks as visual gates only, not final authorization.
+- Treat receipt decisions, order changes, settings changes, and approvals as audit-required actions.
 
 Constraints:
 - Do not trust client-only authorization for sensitive actions.

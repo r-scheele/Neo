@@ -4,7 +4,7 @@ Date: 2026-05-27
 
 Verdict: not ready for a client release candidate.
 
-The current app is a strong local/client MVP prototype, but it should not be treated as a release candidate yet. Prompt 12 confirmed the client-side boundary, release blockers, env placeholders, runtime assets, and backend deferrals. Since then, B01 Supabase backend foundation has been linked and scaffolded, but backend feature workflows are still not implemented.
+The current app is a strong MVP prototype with initial backend commerce sync, but it should not be treated as a release candidate yet. Prompt 12 confirmed the client-side boundary, release blockers, env placeholders, runtime assets, and backend deferrals. Since then, B01-B05 have added Supabase foundation, API/auth boundary, schema readiness, server auth/profile bootstrap, and commerce records sync.
 
 ## Precheck Results
 
@@ -13,8 +13,8 @@ The current app is a strong local/client MVP prototype, but it should not be tre
 | Required files | Passed | All required Prompt 12 files and folders exist. |
 | Public env placeholders | Passed | `.env.example` contains only public Expo placeholders for Clerk, Supabase, API base URL, and PostHog. |
 | Runtime image registry | Passed | `constants/images.ts` maps runtime PNG assets under `assets/images/`. |
-| Backend API boundary | Passed | Supabase foundation exists, but no `lib/api/` directory or feature API usage has been added. |
-| Phase B status | Passed | B01-B03 are complete, B04 is next if Clerk server verification inputs are ready, and B05-B08 remain deferred in `docs/integration-prompts/backend-deferred/backend-deferred-index.md`. |
+| Backend API boundary | Passed | Supabase foundation and `lib/api/` exist; B05 commerce screens now use backend APIs with isolated demo fallback. |
+| Phase B status | Passed | B01-B05 are complete, B06 is next with an approved permissions/audit contract, and B07-B08 remain deferred in `docs/integration-prompts/backend-deferred/backend-deferred-index.md`. |
 | Client verification commands | Passed | `npm run typecheck`, `npm run lint`, and app start smoke on port 8103 pass. |
 | Manual QA baseline | Partially executed and recorded | `docs/manual-qa-results-2026-05-27.md` records preflight and route-smoke checks; full signed-in QA still needs a Clerk test account. |
 | Local-only hardening | Passed for Phase A | Prompt 08 gates mock `state` and `role` route params behind development-only helpers and documents preview paths in `docs/local-preview-controls.md`. |
@@ -38,12 +38,12 @@ These remain intentionally deferred and must not be marked complete from Phase A
 | API client and auth boundary | Complete as typed client boundary. |
 | WhatsApp workflow integration | WhatsApp token, webhook, and media secrets/contracts. |
 | AI draft generation backend | B02 plus server-side AI provider secret and prompt policy. |
-| Commerce records backend sync | B02 plus reviewed/pushed schema and API contracts for orders, customers, receipts, follow-ups, and Today counts. |
-| Server-side permissions and audit logs | B04/B05 plus trusted role source, server authorization, and audit writes. |
+| Commerce records backend sync | Complete. |
+| Server-side permissions and audit logs | Ready to run as B06 using `docs/backend/permissions-audit-contract.md`. |
 
 ## Final Prompt 12 Notes
 
 - Do not remove local-only fallbacks until real backend replacements work.
 - Do not add private secrets or backend env vars to the Expo client.
-- Run B04 next for backend work if Clerk server verification inputs are ready; do not run B05-B08 until required auth/secrets/contracts are ready.
+- Run B06 next for backend work; do not run B07-B08 until required auth/secrets/contracts are ready.
 - Complete the signed-in portions of `docs/manual-qa-baseline.md` before release candidate work.
