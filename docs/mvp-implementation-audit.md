@@ -13,7 +13,7 @@ The implementation is not release-ready because core production integrations are
 - Clerk auth is installed and wired for MVP session creation, token cache, auth-route redirect, and sign-out clearing.
 - Root, auth, setup, tab, detail, and permission routes now guard with Clerk session state and setup completion state.
 - Safe tab attention counts and connectivity UI metadata now use shared runtime Zustand stores.
-- Real WhatsApp sync, AI draft generation, payment verification, OCR/media intake, and remaining customer/team workflows still require backend integration. B05-B06 now provide durable commerce records plus trusted permissions/audit coverage for current sensitive commerce endpoints.
+- Real AI draft generation, payment verification, OCR/media intake, WhatsApp launch hardening/media handling, and remaining customer/team workflows still require backend integration. B05-B07 now provide durable commerce records, trusted permissions/audit coverage, and backend WhatsApp workflow wiring for current MVP endpoints.
 - Most commerce workflows are local-only using typed fixtures or component state.
 - Mock state query params such as `?state=offline` and mock role params such as `?role=staff` are development-only local preview controls. Non-development builds ignore mock state params and do not grant owner/manager behavior from mock role params.
 - Environment/config cleanup is the first integration pass; stale readiness and prompt-status docs should stay aligned with this audit.

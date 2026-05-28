@@ -19,6 +19,8 @@ This file lists what is complete, what is runnable now, and what is deferred unt
 - Backend Phase B B03 database schema readiness is complete with remote schema pushed.
 - Backend Phase B B04 server auth/profile bootstrap is complete.
 - Backend Phase B B05 commerce records backend sync is complete; commerce functions are deployed and the client uses the backend API with isolated demo fallback.
+- Backend Phase B B06 server-side permissions/audit logging is complete for current sensitive commerce endpoints.
+- Backend Phase B B07 WhatsApp workflow integration is complete for setup status, webhook ingestion, conversations, send actions, follow-up sends, and Today unread chat counts.
 - Active runnable prompts are Phase A in `docs/integration-prompts/integration-prompt-index.md`.
 - Backend/API prompts are Phase B in `docs/integration-prompts/backend-deferred/backend-deferred-index.md`.
 
@@ -41,7 +43,7 @@ This file lists what is complete, what is runnable now, and what is deferred unt
 
 ## Phase B: Backend/API Integrations
 
-B01 Supabase foundation, B02 API client/auth boundary, B03 database schema readiness, B04 server auth/profile bootstrap, B05 commerce records backend sync, and B06 server-side permissions/audit logging are complete for current sensitive commerce endpoints. B07-B08 require the listed auth/secrets/contracts.
+B01 Supabase foundation, B02 API client/auth boundary, B03 database schema readiness, B04 server auth/profile bootstrap, B05 commerce records backend sync, B06 server-side permissions/audit logging, and B07 WhatsApp workflow integration are complete for current MVP workflows. B08 requires the listed auth/secrets/contracts.
 
 | Order | Integration | Required for real MVP | Current status | Missing packages | Missing config | Missing env vars | Depends on | Decision that unlocks it | Acceptance criteria |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -51,7 +53,7 @@ B01 Supabase foundation, B02 API client/auth boundary, B03 database schema readi
 | B04 | Server auth and profile bootstrap | Yes for real MVP | Complete | Supabase Edge Functions | Clerk token verification, profile/bootstrap endpoint, shared function helpers | `CLERK_JWKS_URL` set in Supabase secrets; `CLERK_SECRET_KEY` pending only for future Clerk API/webhook needs | B03 | Clerk verification and profile bootstrap implemented server-side | Feature APIs can safely identify the actor. |
 | B05 | Commerce records backend sync | Yes for real MVP | Complete | No client package decision needed | Durable orders/customers/receipts/follow-ups/Today endpoints implemented and deployed | Public API env values only in client; service role stays server-side | B03, B04 | Reviewed schema pushed and endpoint contracts approved | Orders, receipts, customers, follow-ups, and Today counts persist through backend records. |
 | B06 | Server-side permissions and audit logs | Yes | Complete | No client package decision needed | Trusted role source implementation, server authorization, denied-write responses, audit log writes | Clerk and Supabase service secrets in Supabase secrets, not client | B04, B05, approved permissions/audit contract | Implemented for current order, receipt, follow-up, and approval write endpoints | Sensitive actions require server approval; denied writes do not mutate data; audit records exist. |
-| B07 | WhatsApp workflow integration | Yes for real MVP | Deferred/local-only | No direct client package approved | Backend WhatsApp Cloud API/webhook integration, mobile status/conversation/send endpoints | Meta WhatsApp secrets in Supabase secrets, not client | B04, B05 if commerce depends on live conversation IDs | WhatsApp token storage, webhook verification, and media strategy implemented | Connection status, inbox, thread, and send actions use backend APIs safely. |
+| B07 | WhatsApp workflow integration | Yes for real MVP | Complete for MVP wiring | No direct client package approved | Backend WhatsApp Cloud API/webhook integration, mobile status/conversation/send endpoints; media remains deferred | Meta WhatsApp secrets in Supabase secrets, not client | B04, B05 | Meta WhatsApp secrets configured; webhook and send/status/conversation endpoints implemented | Connection status, inbox, thread, and send actions use backend APIs safely. |
 | B08 | AI draft generation backend | Yes for real MVP | Deferred/local-only | No direct client package approved | Server-side AI orchestration, prompt minimization, draft API contract | OpenAI/API provider secret in Supabase secrets, not client | B04, B07 if live context is required | AI provider and prompt/guardrail policy implemented | Drafts are generated server-side and sensitive drafts route to approval. |
 
 ## Integrations Not Required Immediately

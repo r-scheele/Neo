@@ -6,31 +6,31 @@ This document lists the immediate integration steps required after the local MVP
 
 ## Current Status
 
-The app scaffold and primary MVP screens exist. Current behavior is still local-only for auth, WhatsApp, AI, orders, receipts, payments, permissions, and sync.
+The app scaffold and primary MVP screens exist. Clerk wiring, commerce records, permissions/audit checks, and WhatsApp workflow wiring now have backend paths. AI generation, receipt OCR/media intake, payment verification, launch hardening, and full signed-in QA remain open.
 
 Run only one integration pass at a time. Do not configure services, install service packages, or add backend behavior outside the selected prompt.
 
 ## Next 5 Integration Actions
 
-1. Preserve the environment/config cleanup baseline.
+1. Finish live QA and credential rotation.
 
-   The integration order starts with environment/config cleanup. Keep `.env.example`, README, readiness docs, config assumptions, and integration order aligned after each future pass.
+   Verify Clerk and Meta WhatsApp flows with real test accounts/numbers, then rotate the Meta credentials shared during setup.
 
-2. Configure Clerk authentication.
+2. Complete AI draft generation backend.
 
-   Install only the approved Clerk dependencies for that pass, add `ClerkProvider`, implement real sign-in/sign-up, and keep private Clerk keys out of the Expo client.
+   Run B08 only after AI provider secrets, prompt policy, and endpoint contracts are approved.
 
-3. Protect navigation and the app shell.
+3. Harden WhatsApp launch behavior.
 
-   Use real auth/setup state to protect setup, tabs, detail routes, and sensitive paths. Public routes should remain Welcome and Sign In.
+   Confirm Meta webhook callback, send flow, service-window policy, media handling, and production app publishing requirements.
 
-4. Complete safe state and persistence ownership.
+4. Plan receipt/payment verification.
 
-   Centralize only the shared state that is actually needed, keep sensitive data out of Zustand/AsyncStorage, and clear user-specific safe local data on sign-out.
+   Keep the current human review guardrails and add OCR/payment-provider work only through server-owned APIs.
 
-5. Define the backend/API boundary.
+5. Keep docs and verification aligned.
 
-   Decide where real WhatsApp sync, AI draft generation, receipt/payment workflows, customer/order records, server permissions, and audit logs live before implementing them.
+   Update readiness docs after each integration pass and keep `typecheck`, `lint`, and app-start verification green.
 
 ## Stop Conditions
 
@@ -41,7 +41,7 @@ Run only one integration pass at a time. Do not configure services, install serv
 
 ## Do Not Do Yet
 
-- Do not implement real WhatsApp sync, webhooks, or send actions.
+- Do not add new WhatsApp media/template/broadcast behavior outside an approved prompt.
 - Do not implement real AI calls or receipt OCR in the Expo client.
 - Do not verify payments from screenshots alone.
 - Do not add private API keys, provider secrets, database URLs, webhook secrets, or admin credentials to client env files.

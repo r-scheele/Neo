@@ -37,7 +37,7 @@ Backend provider-level decisions are approved, B01-B06 are complete, the remote 
 | B04 | Server auth and profile bootstrap | Complete | Clerk verification and profile bootstrap implemented server-side. |
 | B05 | Commerce records backend sync | Complete | Commerce endpoints deployed and client sync wiring added. |
 | B06 | Server-side permissions and audit logs | Complete | Trusted role checks and audit writes for current sensitive commerce endpoints. |
-| B07 | WhatsApp workflow integration | Deferred | B04 plus WhatsApp token/webhook/media strategy implemented. |
+| B07 | WhatsApp workflow integration | Complete | Meta WhatsApp secrets in Supabase secrets; webhook/status/conversation/send endpoints implemented. |
 | B08 | AI draft generation backend | Deferred | B04 plus server-side AI provider/prompt policy implemented. |
 
 ## Manual Regression Set After Each Runnable Prompt

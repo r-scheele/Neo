@@ -2,7 +2,7 @@
 
 Date: 2026-05-28
 
-Status: B01-B06 foundation, commerce sync, permissions, and audit logging complete; B07 remains deferred.
+Status: B01-B07 foundation, commerce sync, permissions/audit logging, and WhatsApp workflow wiring complete; B08 remains deferred.
 
 ## Current State
 
@@ -19,7 +19,8 @@ Status: B01-B06 foundation, commerce sync, permissions, and audit logging comple
 - B05 commerce Edge Functions are implemented and deployed for `orders`, `customers`, `receipts`, and `follow-ups`.
 - The Expo client now uses backend-backed commerce APIs for Create Order, Order Detail, Customer Profile, Receipt Review, Follow-ups, and Today counts, with isolated demo fixture fallback for old local/demo IDs.
 - B06 permissions/audit contracts are implemented for current sensitive commerce endpoints.
-- WhatsApp, AI, receipt OCR, and payment verification remain deferred.
+- B07 WhatsApp webhook/status/conversation/send endpoints are implemented, with Meta credentials stored in Supabase secrets.
+- AI, receipt OCR, and payment verification remain deferred.
 
 ## Backend Phase Order
 
@@ -31,14 +32,14 @@ Status: B01-B06 foundation, commerce sync, permissions, and audit logging comple
 | B04 | Server auth and profile bootstrap | Complete |
 | B05 | Commerce records backend sync | Complete |
 | B06 | Server-side permissions and audit logs | Complete |
-| B07 | WhatsApp workflow integration | Deferred until B04 plus Meta secrets and endpoint contracts |
+| B07 | WhatsApp workflow integration | Complete |
 | B08 | AI draft generation backend | Deferred until B04 plus AI provider secret and prompt policy |
 
 ## Do Not Do Yet
 
 - Do not rerun remote schema pushes without reviewing the migration diff and confirming intent.
-- Do not integrate WhatsApp, OpenAI, payments, OCR, or webhooks outside their prompts.
-- Do not call B07-B08 endpoints from production flows until their prompts are implemented.
+- Do not integrate OpenAI, payments, OCR, or additional webhook behavior outside their prompts.
+- Do not call B08 endpoints from production flows until its prompt is implemented.
 
 ## B06 Residual Risk
 

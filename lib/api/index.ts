@@ -19,6 +19,12 @@ export { apiEndpoints, type ApiEndpointName } from "./endpoints";
 export { checkHealth, type HealthResponse } from "./health";
 export { useApiClient } from "./useApiClient";
 export {
+  getWhatsAppConversation,
+  getWhatsAppConversations,
+  getWhatsAppStatus,
+  sendWhatsAppMessage,
+} from "./whatsapp";
+export {
   apiFailure,
   apiSuccess,
   errorCategoryFromCode,
@@ -50,3 +56,11 @@ export type {
   BackendTodaySummary,
   CreateCommerceOrderPayload,
 } from "./commerce";
+export type {
+  BackendWhatsAppConversation,
+  BackendWhatsAppConversationDetail,
+  BackendWhatsAppLabel,
+  BackendWhatsAppMessage,
+  BackendWhatsAppStatus,
+  BackendWhatsAppTone,
+} from "./whatsapp";

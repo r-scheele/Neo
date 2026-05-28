@@ -1,10 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ImageSourcePropType } from "react-native";
 import { Image, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 
 import { images } from "@/constants/images";
 import { routes } from "@/constants/routes";
+import {
+  getWhatsAppStatus,
+  type BackendWhatsAppStatus,
+  useApiClient,
+} from "@/lib/api";
 import { trackAnalyticsEvent } from "@/lib/analytics";
 import { Link, Pressable, ScrollView, Text, View } from "@/src/tw";
 import { useSetupStore } from "@/stores/useSetupStore";
@@ -42,7 +47,7 @@ function getStatusCopy(status: ConnectionStatus) {
   if (status === "checking") {
     return {
       title: "Checking connection",
-      description: "Neo is checking the local mock status for this setup step.",
+      description: "Neo is checking the server-side WhatsApp connection.",
       badge: "Checking",
       tone: "warning" as const,
       image: images.iconInbox,
@@ -52,7 +57,7 @@ function getStatusCopy(status: ConnectionStatus) {
   if (status === "disconnected") {
     return {
       title: "Connection needs attention",
-      description: "This mock status is disconnected. Retry when your setup is ready.",
+      description: "The backend needs WhatsApp configuration before Neo can receive messages.",
       badge: "Disconnected",
       tone: "error" as const,
       image: images.errorWhatsappDisconnected,
@@ -61,7 +66,7 @@ function getStatusCopy(status: ConnectionStatus) {
 
   return {
     title: "Connection looks good",
-    description: "Your WhatsApp Business number is connected and ready in this mock setup.",
+    description: "Your WhatsApp Business Cloud API details are configured server-side.",
     badge: "Connected",
     tone: "success" as const,
     image: images.iconInbox,
@@ -71,6 +76,7 @@ function getStatusCopy(status: ConnectionStatus) {
 function getConnectionDetails(
   connectionStatus: ConnectionStatus,
   testStatus: TestStatus,
+  backendStatus: BackendWhatsAppStatus | null,
 ): readonly ConnectionDetail[] {
   const isConnected = connectionStatus === "connected";
 
@@ -78,27 +84,29 @@ function getConnectionDetails(
     {
       icon: images.iconCustomer,
       label: "Business number",
-      description: isConnected ? "+234 80... .... ...." : "No number is connected yet",
+      description: isConnected && backendStatus?.phoneNumberIdLast4
+        ? `Phone number ID ending ${backendStatus.phoneNumberIdLast4}`
+        : "No server-side number is connected yet",
       statusLabel: isConnected ? "Verified" : "Missing",
       tone: isConnected ? "success" : "error",
     },
     {
       icon: images.iconInbox,
       label: "Message source",
-      description: isConnected ? "WhatsApp Business App" : "Waiting for connection",
+      description: backendStatus?.messageSource ?? "Waiting for backend connection",
       statusLabel: isConnected ? "Active" : "Inactive",
       tone: isConnected ? "success" : "muted",
     },
     {
       icon: images.iconAiDraft,
-      label: "Test message",
-      description: "Send a test message to confirm Neo can receive from this number.",
+      label: "Webhook status",
+      description: "Meta can verify Neo using the callback URL and verify token.",
       statusLabel:
         testStatus === "tested"
-          ? "Tested"
+          ? "Checked"
           : testStatus === "failed"
             ? "Failed"
-            : "Not tested",
+            : "Not checked",
       tone:
         testStatus === "tested"
           ? "success"
@@ -201,67 +209,79 @@ function WhatsAppSetupSkeleton() {
   );
 }
 
+function formatStatusTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Recently";
+  }
+
+  return new Intl.DateTimeFormat("en-NG", {
+    hour: "numeric",
+    minute: "2-digit",
+    weekday: "short",
+  }).format(date);
+}
+
 export function WhatsAppSetupScreen() {
+  const apiClient = useApiClient();
   const router = useRouter();
   const { height, width } = useWindowDimensions();
   const isCompactPhone = height < 760 || width < 380;
   const horizontalPadding = width >= 390 ? 20 : 16;
   const [connectionStatus, setConnectionStatus] =
-    useState<ConnectionStatus>("connected");
+    useState<ConnectionStatus>("checking");
   const [testStatus, setTestStatus] = useState<TestStatus>("not-tested");
+  const [backendStatus, setBackendStatus] =
+    useState<BackendWhatsAppStatus | null>(null);
   const [isActionPending, setIsActionPending] = useState(false);
-  const actionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const markStepComplete = useSetupStore((store) => store.markStepComplete);
 
-  useEffect(() => {
-    return () => {
-      if (actionTimerRef.current) {
-        clearTimeout(actionTimerRef.current);
-      }
-    };
-  }, []);
-
   const statusCopy = getStatusCopy(connectionStatus);
-  const connectionDetails = getConnectionDetails(connectionStatus, testStatus);
+  const connectionDetails = getConnectionDetails(
+    connectionStatus,
+    testStatus,
+    backendStatus,
+  );
 
-  const scheduleMockResult = ({
-    nextConnectionStatus,
-    nextTestStatus,
-  }: {
-    nextConnectionStatus: ConnectionStatus;
-    nextTestStatus: TestStatus;
-  }) => {
-    if (actionTimerRef.current) {
-      clearTimeout(actionTimerRef.current);
-    }
-
+  const refreshConnectionStatus = useCallback(async () => {
     setIsActionPending(true);
     setConnectionStatus("checking");
-    actionTimerRef.current = setTimeout(() => {
-      setConnectionStatus(nextConnectionStatus);
-      setTestStatus(nextTestStatus);
-      setIsActionPending(false);
-    }, 900);
-  };
+    const result = await getWhatsAppStatus(apiClient);
 
-  const handlePrimaryAction = () => {
-    if (connectionStatus === "disconnected") {
-      scheduleMockResult({
-        nextConnectionStatus: "connected",
-        nextTestStatus: "not-tested",
-      });
+    if (!result.ok) {
+      setBackendStatus(null);
+      setConnectionStatus("disconnected");
+      setTestStatus("failed");
+      setStatusMessage(result.error.message);
+      setIsActionPending(false);
       return;
     }
 
-    scheduleMockResult({
-      nextConnectionStatus: "connected",
-      nextTestStatus: "tested",
+    setBackendStatus(result.data.status);
+    setConnectionStatus(
+      result.data.status.setupState === "connected" ? "connected" : "disconnected",
+    );
+    setTestStatus(result.data.status.canReceive ? "tested" : "not-tested");
+    setStatusMessage(null);
+    setIsActionPending(false);
+  }, [apiClient]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      void refreshConnectionStatus();
     });
+  }, [refreshConnectionStatus]);
+
+  const handlePrimaryAction = () => {
+    void refreshConnectionStatus();
   };
 
   const handleTroubleshoot = () => {
     setConnectionStatus("disconnected");
     setTestStatus("failed");
+    setStatusMessage("Use the Meta dashboard callback URL and verify token, then retry this check.");
     setIsActionPending(false);
   };
 
@@ -359,7 +379,7 @@ export function WhatsAppSetupScreen() {
                     Last checked
                   </Text>
                   <Text className="mt-2 text-[16px] font-semibold leading-6 text-neo-text">
-                    Today, 10:24 AM
+                    {backendStatus ? formatStatusTime(backendStatus.lastCheckedAt) : "Not checked yet"}
                   </Text>
                 </View>
                 <View className="w-px bg-neo-border" />
@@ -395,9 +415,14 @@ export function WhatsAppSetupScreen() {
                   How it works
                 </Text>
                 <Text className="mt-1 text-[15px] leading-6 text-neo-text-muted">
-                  Neo will validate your connection through a secure backend later.
-                  This screen uses local mock status only.
+                  Neo validates this connection through the backend. Provider tokens
+                  and webhook secrets are never stored in the mobile app.
                 </Text>
+                {statusMessage ? (
+                  <Text className="mt-2 text-[14px] leading-5 text-neo-warning">
+                    {statusMessage}
+                  </Text>
+                ) : null}
               </View>
             </View>
           </View>
@@ -407,7 +432,7 @@ export function WhatsAppSetupScreen() {
           accessibilityLabel={
             connectionStatus === "disconnected"
               ? "Retry WhatsApp connection"
-              : "Test connection"
+              : "Refresh WhatsApp connection"
           }
           accessibilityRole="button"
           accessibilityState={{ disabled: isActionPending }}
@@ -431,8 +456,8 @@ export function WhatsAppSetupScreen() {
             {isActionPending
               ? "Checking status"
               : connectionStatus === "disconnected"
-                ? "Retry connection"
-                : "Test connection"}
+                ? "Retry backend check"
+                : "Refresh status"}
           </Text>
         </Pressable>
 

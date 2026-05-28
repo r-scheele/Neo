@@ -18,7 +18,7 @@ Status: Current client architecture for the local MVP prototype. App source exis
 
 Neo should be built as a mobile-first Expo app using React Native, TypeScript, Expo Router, NativeWind, Zustand, AsyncStorage, Clerk, PostHog, and EAS Build.
 
-The current implementation is an app-first local MVP prototype built feature by feature with typed local/mock data, generated assets, and clear route boundaries. Real WhatsApp, AI, receipt extraction, payment, and multi-user sync integrations require the approved Supabase backend boundary because their secrets and sensitive operations cannot safely live in a mobile client.
+The current implementation is an app-first MVP prototype built feature by feature with typed local/mock fallbacks, generated assets, clear route boundaries, and a Supabase backend boundary for commerce and WhatsApp workflows. Real AI, receipt extraction, payment, remaining media handling, and broader multi-user sync integrations still require server-owned implementation because their secrets and sensitive operations cannot safely live in a mobile client.
 
 ## Primary Decision
 
@@ -88,7 +88,7 @@ The first Home screen implementation should map to the Today Command Center tab,
 | Auth state | Clerk | Clerk-managed | Do not manually persist auth tokens |
 | Generated assets | `constants/images.ts` | Bundled app assets | Centralized imports and names |
 | Analytics events | `lib/analytics/` | PostHog service | Typed events, no message text or private data |
-| Live external data | Supabase backend | Supabase Postgres/Storage | WhatsApp, AI, payments, receipts, and multi-user data remain deferred until B05-B08 |
+| Live external data | Supabase backend | Supabase Postgres/Storage | Commerce and WhatsApp workflows are partially backend-backed through B05-B07; AI, payments, receipt OCR/media, and broader multi-user data remain deferred |
 
 ## Feature Build Pattern
 
@@ -150,7 +150,7 @@ The following must remain mocked, local, disabled, or represented as placeholder
 - Cross-device sync.
 - Admin monitoring.
 
-Backend/API ownership, server-side data contracts, safe error categories, and approved Supabase foundation decisions are defined in `docs/backend-api-boundary.md` and `docs/backend/`. `lib/api/` owns the typed client boundary from B02, B05 connects commerce records through Supabase Edge Functions, and B06 enforces trusted role checks plus audit writes for current sensitive commerce endpoints. WhatsApp, AI, OCR, and payment-provider work remain behind later backend prompts.
+Backend/API ownership, server-side data contracts, safe error categories, and approved Supabase foundation decisions are defined in `docs/backend-api-boundary.md` and `docs/backend/`. `lib/api/` owns the typed client boundary from B02, B05 connects commerce records through Supabase Edge Functions, B06 enforces trusted role checks plus audit writes for current sensitive commerce endpoints, and B07 connects WhatsApp status/webhook/conversation/send workflows. AI, OCR, and payment-provider work remain behind later backend prompts.
 
 ## Quality Gates
 
@@ -165,4 +165,4 @@ Every implementation step should keep these checks green:
 
 ## Ready For Next Step
 
-This architecture is ready for the remaining ordered backend integration passes. B01 Supabase foundation, B02 API client/auth boundary, B03 database schema readiness, B04 server auth/profile bootstrap, B05 commerce records backend sync, and B06 server-side permissions/audit logging are complete; do not run B07 until WhatsApp prerequisites are approved.
+This architecture is ready for the remaining ordered backend integration passes. B01 Supabase foundation, B02 API client/auth boundary, B03 database schema readiness, B04 server auth/profile bootstrap, B05 commerce records backend sync, B06 server-side permissions/audit logging, and B07 WhatsApp workflow integration are complete; do not run B08 until AI provider prerequisites are approved.
