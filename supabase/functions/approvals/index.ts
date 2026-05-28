@@ -12,6 +12,7 @@ import {
   optionalString,
   records,
   requiredString,
+  safeJsonArray,
 } from "../_shared/postgrest.ts";
 import {
   auditWriteFailed,
@@ -32,6 +33,22 @@ type ApprovalRow = {
   decidedAt: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+type AiDraftApprovalRow = {
+  approvalId: string | null;
+  confidenceBand: string | null;
+  conversationId: string | null;
+  customerId: string | null;
+  draftText: string | null;
+  id: string;
+  riskReasons: readonly string[];
+  status: string;
+};
+
+type CustomerRow = {
+  displayName: string;
+  id: string;
 };
 
 Deno.serve(async (request) => {
@@ -84,8 +101,29 @@ async function listApprovals(
     return approvals.response;
   }
 
+  const aiDrafts = await selectAiDraftsForApprovals(businessId, approvals.data);
+  if (!aiDrafts.ok) {
+    return aiDrafts.response;
+  }
+
+  const customers = await selectCustomersForDrafts(businessId, aiDrafts.data);
+  if (!customers.ok) {
+    return customers.response;
+  }
+
   return ok({
-    approvals: approvals.data.map(approvalDto),
+    approvals: approvals.data.map((approval) => {
+      const aiDraft = aiDrafts.data.get(approval.id) ?? null;
+
+      return approvalDto({
+        aiDraft,
+        approval,
+        customer: customerForDraft({
+          aiDraft,
+          customers: customers.data,
+        }),
+      });
+    }),
   });
 }
 
@@ -171,7 +209,18 @@ async function decideApproval(
     return auditWriteFailed();
   }
 
-  return ok({ approval: approvalDto(updated.data) });
+  if (updated.data.subjectType === "ai_draft" && updated.data.subjectId) {
+    const draftUpdate = await updateAiDraftDecision({
+      businessId: context.businessId,
+      decision,
+      draftId: updated.data.subjectId,
+    });
+    if (!draftUpdate.ok) {
+      return draftUpdate.response;
+    }
+  }
+
+  return ok({ approval: approvalDto({ approval: updated.data }) });
 }
 
 async function selectApproval(
@@ -193,8 +242,115 @@ async function selectApproval(
   );
 }
 
-function approvalDto(approval: ApprovalRow) {
+async function selectAiDraftsForApprovals(
+  businessId: string,
+  approvals: readonly ApprovalRow[],
+): Promise<
+  | { ok: true; data: Map<string, AiDraftApprovalRow> }
+  | { ok: false; response: Response }
+> {
+  const approvalIds = approvals
+    .filter((approval) => approval.subjectType === "ai_draft")
+    .map((approval) => approval.id);
+
+  if (approvalIds.length === 0) {
+    return { ok: true, data: new Map() };
+  }
+
+  return dbRequest(
+    `/rest/v1/ai_drafts?business_id=eq.${encodeURIComponent(businessId)}` +
+      `&approval_id=in.(${approvalIds.map(encodeURIComponent).join(",")})` +
+      "&select=id,approval_id,conversation_id,customer_id,status,confidence_band,risk_reasons,draft_text",
+    { method: "GET" },
+    (value) =>
+      new Map(records(value).map((record) => {
+        const draft = parseAiDraftApprovalRow(record);
+        return [draft.approvalId ?? draft.id, draft];
+      })),
+  );
+}
+
+async function selectCustomersForDrafts(
+  businessId: string,
+  drafts: Map<string, AiDraftApprovalRow>,
+): Promise<
+  | { ok: true; data: Map<string, CustomerRow> }
+  | { ok: false; response: Response }
+> {
+  const customerIds = [...new Set(
+    [...drafts.values()].flatMap((draft) =>
+      draft.customerId ? [draft.customerId] : []
+    ),
+  )];
+
+  if (customerIds.length === 0) {
+    return { ok: true, data: new Map() };
+  }
+
+  return dbRequest(
+    `/rest/v1/customers?business_id=eq.${encodeURIComponent(businessId)}` +
+      `&id=in.(${customerIds.map(encodeURIComponent).join(",")})` +
+      "&select=id,display_name",
+    { method: "GET" },
+    (value) =>
+      new Map(records(value).map((record) => {
+        const customer = parseCustomerRow(record);
+        return [customer.id, customer];
+      })),
+  );
+}
+
+async function updateAiDraftDecision({
+  businessId,
+  decision,
+  draftId,
+}: {
+  businessId: string;
+  decision: string;
+  draftId: string;
+}): Promise<{ ok: true } | { ok: false; response: Response }> {
+  const updated = await dbRequest(
+    `/rest/v1/ai_drafts?business_id=eq.${encodeURIComponent(businessId)}` +
+      `&id=eq.${encodeURIComponent(draftId)}&select=id`,
+    {
+      body: {
+        status: statusForDecision(decision),
+        updated_at: new Date().toISOString(),
+      },
+      method: "PATCH",
+      prefer: "return=representation",
+    },
+    (value) => requiredString(requiredFirst(value).id),
+  );
+
+  if (!updated.ok) {
+    return updated;
+  }
+
+  return { ok: true };
+}
+
+function approvalDto({
+  aiDraft = null,
+  approval,
+  customer = null,
+}: {
+  aiDraft?: AiDraftApprovalRow | null;
+  approval: ApprovalRow;
+  customer?: CustomerRow | null;
+}) {
   return {
+    aiDraft: aiDraft
+      ? {
+          body: aiDraft.draftText ?? "",
+          confidence: aiDraft.confidenceBand ?? "medium",
+          conversationId: aiDraft.conversationId,
+          customerName: customer?.displayName ?? "Customer",
+          id: aiDraft.id,
+          riskReasons: aiDraft.riskReasons,
+          status: aiDraft.status,
+        }
+      : null,
     createdAt: approval.createdAt,
     decidedAt: approval.decidedAt,
     id: approval.id,
@@ -204,6 +360,16 @@ function approvalDto(approval: ApprovalRow) {
     subjectType: approval.subjectType,
     updatedAt: approval.updatedAt,
   };
+}
+
+function customerForDraft({
+  aiDraft,
+  customers,
+}: {
+  aiDraft: AiDraftApprovalRow | null;
+  customers: Map<string, CustomerRow>;
+}): CustomerRow | null {
+  return aiDraft?.customerId ? customers.get(aiDraft.customerId) ?? null : null;
 }
 
 function parseApprovalRow(record: Record<string, unknown>): ApprovalRow {
@@ -219,6 +385,27 @@ function parseApprovalRow(record: Record<string, unknown>): ApprovalRow {
     subjectId: optionalString(record.subject_id),
     subjectType: requiredString(record.subject_type),
     updatedAt: requiredString(record.updated_at),
+  };
+}
+
+function parseAiDraftApprovalRow(record: Record<string, unknown>): AiDraftApprovalRow {
+  return {
+    approvalId: optionalString(record.approval_id),
+    confidenceBand: optionalString(record.confidence_band),
+    conversationId: optionalString(record.conversation_id),
+    customerId: optionalString(record.customer_id),
+    draftText: optionalString(record.draft_text),
+    id: requiredString(record.id),
+    riskReasons: safeJsonArray(record.risk_reasons)
+      .filter((item): item is string => typeof item === "string"),
+    status: requiredString(record.status),
+  };
+}
+
+function parseCustomerRow(record: Record<string, unknown>): CustomerRow {
+  return {
+    displayName: requiredString(record.display_name),
+    id: requiredString(record.id),
   };
 }
 

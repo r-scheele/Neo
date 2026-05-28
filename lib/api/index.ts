@@ -1,9 +1,11 @@
 export { createApiClient } from "./client";
+export { requestAiDraft } from "./aiDrafts";
 export {
   cancelCommerceOrder,
   completeFollowUp,
   createCommerceOrder,
   decideApproval,
+  getApprovals,
   getCommerceOrder,
   getCustomerProfile,
   getFollowUps,
@@ -43,6 +45,12 @@ export type {
   ApiTokenProvider,
 } from "./types";
 export type {
+  AiDraftPreferencesPayload,
+  BackendAiDraft,
+} from "./aiDrafts";
+export type {
+  BackendApprovalAiDraft,
+  BackendApprovalsResponse,
   BackendCustomerProfile,
   BackendApproval,
   BackendApprovalDecision,

@@ -19,7 +19,7 @@ import {
   trackAnalyticsEvent,
   trackScreenStateSeen,
 } from "@/lib/analytics";
-import { decideApproval, useApiClient } from "@/lib/api";
+import { decideApproval, getApprovals, useApiClient } from "@/lib/api";
 import { Link, Pressable, ScrollView, Text, TextInput, View } from "@/src/tw";
 import { useOperationsStore } from "@/stores/useOperationsStore";
 
@@ -34,6 +34,7 @@ import {
   filterApprovalItems,
   getApprovalCounts,
   initialApprovalItems,
+  normalizeBackendApproval,
 } from "./approvalQueueData";
 
 type ApprovalViewState = "ready" | "loading" | "error";
@@ -94,11 +95,11 @@ function getCategoryIcon(filter: ApprovalFilter): ImageSourcePropType {
 
 function getDecisionLabel(decision: ApprovalDecision) {
   if (decision === "approved") {
-    return "Approved locally";
+    return "Approved";
   }
 
   if (decision === "edited") {
-    return "Edited locally";
+    return "Edited";
   }
 
   if (decision === "asked") {
@@ -106,10 +107,10 @@ function getDecisionLabel(decision: ApprovalDecision) {
   }
 
   if (decision === "escalated") {
-    return "Escalated locally";
+    return "Escalated";
   }
 
-  return "Rejected locally";
+  return "Rejected";
 }
 
 function Header({
@@ -332,8 +333,7 @@ function DecisionPill({ decision }: { decision: ApprovalDecision }) {
         {getDecisionLabel(decision)}
       </Text>
       <Text className="mt-1 text-[13px] leading-5 text-neo-text">
-        This only updates the mock approval queue. No AI reply, payment, or backend
-        action was sent.
+        No customer message, payment confirmation, or AI reply was sent automatically.
       </Text>
     </View>
   );
@@ -655,8 +655,10 @@ function ApprovalSkeleton() {
 }
 
 function EmptyApprovals({
+  actionLabel,
   onReset,
 }: {
+  actionLabel: string;
   onReset: () => void;
 }) {
   return (
@@ -675,13 +677,13 @@ function EmptyApprovals({
         review.
       </Text>
       <Pressable
-        accessibilityLabel="Restore demo approvals"
+        accessibilityLabel={actionLabel}
         accessibilityRole="button"
         className="mt-5 min-h-12 items-center justify-center rounded-lg border border-neo-primary bg-neo-surface px-4"
         onPress={onReset}
       >
         <Text className="text-[15px] font-bold leading-5 text-neo-primary">
-          Restore demo queue
+          {actionLabel}
         </Text>
       </Pressable>
     </View>
@@ -744,11 +746,12 @@ export function ApprovalQueueScreen({
   const isCompactPhone = height < 760 || width < 380;
   const horizontalPadding = width >= 390 ? 20 : 16;
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isBackendMode = initialState === "ready";
   const setApprovalPendingCount = useOperationsStore(
     (store) => store.setApprovalPendingCount,
   );
   const [items, setItems] = useState<readonly ApprovalQueueItem[]>(
-    initialApprovalItems,
+    isBackendMode ? [] : initialApprovalItems,
   );
   const [activeFilter, setActiveFilter] = useState<ApprovalFilter>("all");
   const [decisions, setDecisions] = useState<DecisionState>({});
@@ -760,7 +763,9 @@ export function ApprovalQueueScreen({
   const [viewState, setViewState] = useState<ApprovalViewState>(
     initialState === "loading" || initialState === "error"
       ? initialState
-      : "ready",
+      : isBackendMode
+        ? "loading"
+        : "ready",
   );
   const effectiveRole = initialState === "permission" ? "staff" : mockRole;
   const actionsDisabled = initialState === "offline";
@@ -782,6 +787,36 @@ export function ApprovalQueueScreen({
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!isBackendMode) {
+      return;
+    }
+
+    let isActive = true;
+
+    getApprovals(apiClient).then((result) => {
+      if (!isActive) {
+        return;
+      }
+
+      if (result.ok) {
+        setItems(result.data.approvals.map(normalizeBackendApproval));
+        setViewState("ready");
+        return;
+      }
+
+      setNotice({
+        message: result.error.message,
+        title: "Approval queue failed",
+      });
+      setViewState("error");
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [apiClient, isBackendMode]);
 
   useEffect(() => {
     const screenStateForAnalytics: MockScreenState =
@@ -901,6 +936,11 @@ export function ApprovalQueueScreen({
   }
 
   function resetQueue() {
+    if (isBackendMode) {
+      retryLoad();
+      return;
+    }
+
     setItems(initialApprovalItems);
     setDecisions({});
     setEditingId(null);
@@ -915,6 +955,24 @@ export function ApprovalQueueScreen({
 
     if (retryTimerRef.current) {
       clearTimeout(retryTimerRef.current);
+    }
+
+    if (isBackendMode) {
+      getApprovals(apiClient).then((result) => {
+        if (result.ok) {
+          setItems(result.data.approvals.map(normalizeBackendApproval));
+          setDecisions({});
+          setViewState("ready");
+          return;
+        }
+
+        setNotice({
+          message: result.error.message,
+          title: "Approval queue failed",
+        });
+        setViewState("error");
+      });
+      return;
     }
 
     retryTimerRef.current = setTimeout(() => {
@@ -1006,7 +1064,10 @@ export function ApprovalQueueScreen({
               ))}
             </View>
           ) : (
-            <EmptyApprovals onReset={resetQueue} />
+            <EmptyApprovals
+              actionLabel={isBackendMode ? "Reload approvals" : "Restore demo queue"}
+              onReset={resetQueue}
+            />
           )
         ) : null}
       </View>

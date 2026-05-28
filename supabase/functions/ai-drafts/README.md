@@ -1,9 +1,11 @@
 # ai-drafts
 
-Status: deferred stub.
+Status: B08 implemented for MVP AI draft generation.
 
-Future scope:
+Implemented:
 - Generate and store AI draft replies through server-side provider calls.
+- Use safe setup preferences and minimized WhatsApp message previews.
 - Apply guardrails, confidence bands, and approval routing.
+- Write `ai_draft.created` audit rows with safe metadata only.
 
-Do not implement until B04 defines provider, prompt minimization, and policy behavior.
+Do not log prompts, draft text, raw private messages, phone numbers, or provider secrets.

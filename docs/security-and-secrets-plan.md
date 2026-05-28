@@ -18,7 +18,7 @@ Do not put private API keys, provider secrets, WhatsApp tokens, AI provider keys
 | Supabase anon key | Yes, as public env | Public anon key only; service role key is forbidden in Expo |
 | API base URL | Yes, as public env | Public Supabase Edge Functions URL only |
 | PostHog project key | Yes, as public env if approved | Still avoid sensitive event properties |
-| AI provider API key | No | Requires backend boundary |
+| AI provider API key | No | Stored only as a Supabase secret for the B08 AI draft Edge Function |
 | WhatsApp access token | No | Requires backend boundary |
 | Payment provider secret | No | Requires backend boundary |
 | Webhook signing secret | No | Requires backend boundary |
@@ -56,11 +56,11 @@ EXPO_PUBLIC_POSTHOG_HOST=
 
 ## Backend Boundary Required
 
-The app must stop and introduce a backend plan before implementing real:
+The app must stop and introduce or update a backend plan before implementing real:
 
 - WhatsApp message sync.
 - WhatsApp webhooks.
-- AI draft generation.
+- Any new AI provider workflow beyond the approved B08 server-side draft generation path.
 - Receipt OCR/extraction.
 - Payment verification.
 - Staff role enforcement for sensitive actions.

@@ -2,7 +2,7 @@
 
 This folder holds Phase B prompts. They are required for a real backend-backed MVP.
 
-B01 Supabase backend foundation, B02 API/client auth boundary, B03 database schema readiness, B04 server auth/profile bootstrap, B05 commerce records backend sync, B06 permissions/audit logging, and B07 WhatsApp workflow integration are complete for MVP wiring. The remote schema is pushed and the implemented commerce/WhatsApp functions are deployed.
+B01 Supabase backend foundation, B02 API/client auth boundary, B03 database schema readiness, B04 server auth/profile bootstrap, B05 commerce records backend sync, B06 permissions/audit logging, B07 WhatsApp workflow integration, and B08 AI draft generation backend are complete for MVP wiring. The remote schema is pushed and the implemented commerce/WhatsApp/AI draft functions are deployed or ready to deploy.
 
 Approved B01 foundation:
 
@@ -19,9 +19,9 @@ The active runnable prompt sequence lives in `../integration-prompt-index.md`.
 
 ## How To Use Later
 
-1. Do not run `prompts/B08-ai-draft-generation-backend.md` until the required AI provider secret, prompt policy, and endpoint contracts are approved.
-2. Verify, review, and commit.
-3. Continue through B07-B08 one prompt at a time only after each prompt's required secrets/contracts exist.
+1. Verify, review, and commit each remaining launch-hardening or later integration prompt.
+2. Continue one prompt at a time only after each prompt's required secrets/contracts exist.
+3. Rotate shared test provider credentials before production.
 
 Do not run remote schema pushes or configure WhatsApp/OpenAI/payment behavior from this folder unless the active prompt explicitly scopes that work.
 
@@ -36,4 +36,4 @@ Do not run remote schema pushes or configure WhatsApp/OpenAI/payment behavior fr
 | B05 | Commerce records backend sync | Complete |
 | B06 | Server-side permissions and audit logs | Complete |
 | B07 | WhatsApp workflow integration | Complete |
-| B08 | AI draft generation backend | Not until B04 and AI provider prompt/secrets are ready |
+| B08 | AI draft generation backend | Complete |

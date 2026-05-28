@@ -89,9 +89,8 @@ B06 and later backend passes should use these canonical event names unless imple
 | `follow_up.completed` | Follow-up completion. |
 | `follow_up.rescheduled` | Follow-up due date/status changes. |
 | `whatsapp.send_attempted` | Future WhatsApp send attempts, including failures. |
-| `ai_draft.generated` | Future server-side AI draft generation without prompt or draft text in metadata. |
-| `ai_draft.approved` | Future AI draft approval. |
-| `ai_draft.rejected` | Future AI draft rejection. |
+| `ai_draft.created` | Server-side AI draft generation without prompt or draft text in metadata. |
+| `approval.decision_recorded` | Current AI draft approval/rejection/escalation decision path. |
 | `media.upload_requested` | Future signed upload preparation for sensitive media. |
 | `media.signed_url_issued` | Future signed read URL issuance for sensitive media. |
 | `permission.denied` | Denied sensitive writes or sensitive access attempts. |

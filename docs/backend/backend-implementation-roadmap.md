@@ -2,7 +2,7 @@
 
 Date: 2026-05-28
 
-Status: B01-B07 foundation, commerce sync, permissions/audit logging, and WhatsApp workflow wiring complete; B08 remains deferred.
+Status: B01-B08 foundation, commerce sync, permissions/audit logging, WhatsApp workflow wiring, and AI draft generation wiring are complete for MVP.
 
 ## Current State
 
@@ -20,7 +20,7 @@ Status: B01-B07 foundation, commerce sync, permissions/audit logging, and WhatsA
 - The Expo client now uses backend-backed commerce APIs for Create Order, Order Detail, Customer Profile, Receipt Review, Follow-ups, and Today counts, with isolated demo fixture fallback for old local/demo IDs.
 - B06 permissions/audit contracts are implemented for current sensitive commerce endpoints.
 - B07 WhatsApp webhook/status/conversation/send endpoints are implemented, with Meta credentials stored in Supabase secrets.
-- AI, receipt OCR, and payment verification remain deferred.
+- Receipt OCR, payment verification, transaction-safe audit hardening, and full live-provider QA remain deferred.
 
 ## Backend Phase Order
 
@@ -33,13 +33,13 @@ Status: B01-B07 foundation, commerce sync, permissions/audit logging, and WhatsA
 | B05 | Commerce records backend sync | Complete |
 | B06 | Server-side permissions and audit logs | Complete |
 | B07 | WhatsApp workflow integration | Complete |
-| B08 | AI draft generation backend | Deferred until B04 plus AI provider secret and prompt policy |
+| B08 | AI draft generation backend | Complete |
 
 ## Do Not Do Yet
 
 - Do not rerun remote schema pushes without reviewing the migration diff and confirming intent.
-- Do not integrate OpenAI, payments, OCR, or additional webhook behavior outside their prompts.
-- Do not call B08 endpoints from production flows until its prompt is implemented.
+- Do not integrate payment, OCR, or additional webhook behavior outside their prompts.
+- Do not treat B08 as production-ready until live QA is recorded and the shared test OpenAI key is rotated.
 
 ## B06 Residual Risk
 

@@ -25,6 +25,7 @@ export type SensitivePermission =
   | "whatsapp.send";
 
 export type AuditAction =
+  | "ai_draft.created"
   | "approval.decision_recorded"
   | "business.ai_settings.updated"
   | "business.delivery_zones.updated"
@@ -49,6 +50,7 @@ export type AuditAction =
   | "whatsapp.send_attempted";
 
 export type AuditEntityType =
+  | "ai_draft"
   | "approval"
   | "business"
   | "customer"
@@ -153,7 +155,9 @@ const permissionsByRole: Record<BusinessRole, ReadonlySet<SensitivePermission>> 
 const safeMetadataKeys = new Set([
   "actor_role",
   "amount_band",
+  "approval_required",
   "approval_type",
+  "confidence_band",
   "decision",
   "delivery_status",
   "endpoint",
@@ -164,6 +168,7 @@ const safeMetadataKeys = new Set([
   "previous_status",
   "reason_code",
   "result",
+  "risk_category",
   "target_role",
 ]);
 

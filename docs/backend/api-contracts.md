@@ -2,7 +2,7 @@
 
 Date: 2026-05-28
 
-Status: approved response envelope; B02 client parser exists; B04 auth bootstrap endpoints exist; B05 commerce endpoints are implemented and deployed; B06 permissions/audit handling is implemented for current sensitive commerce endpoints; B07 WhatsApp workflow endpoints are implemented.
+Status: approved response envelope; B02 client parser exists; B04 auth bootstrap endpoints exist; B05 commerce endpoints are implemented and deployed; B06 permissions/audit handling is implemented for current sensitive commerce endpoints; B07 WhatsApp workflow endpoints are implemented; B08 AI draft generation is implemented for MVP wiring.
 
 Base URL env var:
 
@@ -64,6 +64,7 @@ Implemented:
 - `approvals`: list safe approval records and record owner/manager approval decisions.
 - `whatsapp-send-message`: authenticated WhatsApp setup status, conversation list/detail, and server-side send actions.
 - `whatsapp-webhook`: public Meta webhook challenge/signature receiver; stores redacted raw webhook events and normalizes inbound/status events.
+- `ai-drafts`: server-side AI draft generation from minimized WhatsApp conversation context with approval routing.
 
 Other function folders return safe deferred errors until their matching Phase B prompt is implemented.
 
@@ -95,6 +96,19 @@ Function: `whatsapp-webhook`
   - Updates outbound message status records from Meta status webhooks.
 
 Webhook payload storage must redact private phone identifiers, profile names, captions, and message bodies. The app must not log provider tokens, webhook secrets, raw message text, phone numbers, receipt images, or customer private content.
+
+## B08 AI Draft Endpoint Contract
+
+AI provider credentials live only in Supabase secrets. The mobile app sends only safe setup preferences and a conversation id through the authenticated API client. The Edge Function builds the provider request server-side from minimized message previews, parses a structured response, stores the generated draft record, routes low-confidence or sensitive drafts to approvals, and writes only safe audit metadata.
+
+Function: `ai-drafts`
+
+- `POST /ai-drafts/conversations/:conversationId`
+  - Body: `{ "preferences": { "tone": "warm", "replyLength": "balanced", "customerAddress": "ma-sir", "useNigerianEnglish": true, "approvalGuardrails": { "receipts": true, "refunds": true, "discounts": true, "complaints": true } } }`
+  - Returns a draft for human review with confidence band, source chips, guardrail text, risk category, approval requirement, and optional approval id.
+  - Never returns AI prompts, provider raw responses, raw private message text, phone numbers, or provider credentials.
+  - Sensitive or low-confidence drafts create an `approvals` row and must not be sent directly from Conversation Detail.
+  - Writes `ai_draft.created` with safe metadata only: actor role, approval-required flag, confidence band, risk category, reason code, result, and permission label.
 
 ## B06 Permissions And Audit Behavior
 
@@ -370,7 +384,7 @@ Function: `approvals`
 
 `GET /approvals?status=&limit=&cursor=`
 
-Returns safe approval records for the active business. It must not return AI draft text, prompt text, private message text, bank proof, or receipt media URLs.
+Returns safe approval records for the active business. For AI draft approvals, it may return the generated draft body needed for owner/manager human review. It must not return AI prompt text, private message text, bank proof, receipt media URLs, provider raw responses, phone numbers, or secrets.
 
 `PATCH /approvals/:approvalId/decision`
 
@@ -391,7 +405,7 @@ Allowed decisions:
 - `rejected`
 - `sent`
 
-Writes `approval.decision_recorded` with safe metadata only. The MVP endpoint records the approval decision; it does not send WhatsApp messages or AI draft text.
+Writes `approval.decision_recorded` with safe metadata only. The MVP endpoint records the approval decision and updates the related AI draft status; it does not send WhatsApp messages automatically.
 
 ### Today Counts
 

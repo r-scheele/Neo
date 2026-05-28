@@ -2,7 +2,7 @@
 
 Date: 2026-05-28
 
-Status: documented; B04 uses `CLERK_JWKS_URL`; B07 Meta WhatsApp secrets are configured for backend testing.
+Status: documented; B04 uses `CLERK_JWKS_URL`; B07 Meta WhatsApp secrets and B08 OpenAI secret are configured for backend testing.
 
 Server secrets must live in Supabase secrets, not in the Expo app.
 
@@ -53,5 +53,7 @@ Do not add real values for them to tracked files or Expo client code.
 - `CLERK_JWKS_URL` is set.
 - `CLERK_SECRET_KEY` is pending user confirmation.
 - Meta WhatsApp server-side secrets are set for B07 backend testing.
-- OpenAI and PostHog server-side secrets are pending.
+- `OPENAI_API_KEY` is set for B08 backend testing.
+- PostHog server-side secrets are pending.
+- Rotate the current OpenAI test key after testing because it was shared during setup.
 - Rotate the current Meta app secret and access token before production launch because they were shared during setup/testing.
