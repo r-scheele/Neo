@@ -250,7 +250,18 @@ export type BackendApprovalDecision =
   | "rejected"
   | "sent";
 
+export type BackendApprovalAiDraft = {
+  body: string;
+  confidence: "high" | "low" | "medium";
+  conversationId?: string;
+  customerName: string;
+  id: string;
+  riskReasons: readonly string[];
+  status: string;
+};
+
 export type BackendApproval = {
+  aiDraft: BackendApprovalAiDraft | null;
   createdAt: string;
   decidedAt?: string;
   id: string;
@@ -259,6 +270,10 @@ export type BackendApproval = {
   subjectId?: string;
   subjectType: string;
   updatedAt: string;
+};
+
+export type BackendApprovalsResponse = {
+  approvals: readonly BackendApproval[];
 };
 
 export function createCommerceOrder(
@@ -346,6 +361,15 @@ export function decideApproval(
     method: "PATCH",
     body: { decision },
     parseData: parseApprovalEnvelope,
+  });
+}
+
+export function getApprovals(
+  client: ApiClient,
+): Promise<ApiResult<BackendApprovalsResponse>> {
+  return client.request({
+    path: `${apiEndpoints.approvals}?status=pending`,
+    parseData: parseApprovalsResponse,
   });
 }
 
@@ -635,10 +659,19 @@ function parseApprovalEnvelope(data: unknown): { approval: BackendApproval } {
   };
 }
 
+function parseApprovalsResponse(data: unknown): BackendApprovalsResponse {
+  const record = requiredRecord(data);
+
+  return {
+    approvals: requiredArray(record.approvals).map(parseApproval),
+  };
+}
+
 function parseApproval(value: unknown): BackendApproval {
   const record = requiredRecord(value);
 
   return {
+    aiDraft: record.aiDraft === null ? null : parseApprovalAiDraft(record.aiDraft),
     createdAt: requiredString(record.createdAt),
     decidedAt: optionalString(record.decidedAt),
     id: requiredString(record.id),
@@ -647,6 +680,20 @@ function parseApproval(value: unknown): BackendApproval {
     subjectId: optionalString(record.subjectId),
     subjectType: requiredString(record.subjectType),
     updatedAt: requiredString(record.updatedAt),
+  };
+}
+
+function parseApprovalAiDraft(value: unknown): BackendApprovalAiDraft {
+  const record = requiredRecord(value);
+
+  return {
+    body: requiredString(record.body),
+    confidence: parseUnion(record.confidence, ["high", "low", "medium"] as const),
+    conversationId: optionalString(record.conversationId),
+    customerName: requiredString(record.customerName),
+    id: requiredString(record.id),
+    riskReasons: requiredArray(record.riskReasons).map(requiredString),
+    status: requiredString(record.status),
   };
 }
 

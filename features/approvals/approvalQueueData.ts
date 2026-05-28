@@ -1,8 +1,9 @@
 import type { ImageSourcePropType } from "react-native";
 
 import { images } from "@/constants/images";
+import type { BackendApproval } from "@/lib/api";
 
-// DEV-ONLY FIXTURE DATA: replace with backend-backed approval records before release.
+// DEV-ONLY FIXTURE DATA: backend-backed approval records are normalized below.
 export type ApprovalCategory =
   | "payments"
   | "complaints"
@@ -177,5 +178,193 @@ export function filterApprovalItems({
       item.orderId.toLowerCase().includes(normalizedQuery);
 
     return matchesFilter && matchesQuery;
+  });
+}
+
+export function normalizeBackendApproval(
+  approval: BackendApproval,
+): ApprovalQueueItem {
+  if (!approval.aiDraft) {
+    return normalizeGenericBackendApproval(approval);
+  }
+
+  const category = getBackendApprovalCategory(approval);
+  const issueTitle =
+    approval.aiDraft.riskReasons[0] ?? getDefaultIssueTitle(category);
+  const timestamp = formatApprovalTimestamp(approval.createdAt);
+
+  return {
+    actionKind: category === "low-confidence" ? "edit-first" : "review-draft",
+    category,
+    confidence: confidenceScore(approval.aiDraft.confidence),
+    contextLabel: "From WhatsApp",
+    customerName: approval.aiDraft.customerName,
+    detailLabel: approval.aiDraft.riskReasons[0],
+    draftTitle: getBackendDraftTitle(category),
+    icon: getBackendApprovalIcon(category),
+    id: approval.id,
+    issueTitle,
+    orderId: "WhatsApp draft",
+    primaryActionLabel: category === "low-confidence" ? "Edit first" : "Review draft",
+    recommendation: approval.aiDraft.body,
+    riskLabel: getBackendRiskLabel(category),
+    riskLevel: getBackendRiskLevel(category, approval.aiDraft.confidence),
+    sourceLabel: "Neo AI",
+    subtitle: timestamp,
+    suggestionTitle: "AI draft reply",
+    timestamp,
+  };
+}
+
+function normalizeGenericBackendApproval(
+  approval: BackendApproval,
+): ApprovalQueueItem {
+  const timestamp = formatApprovalTimestamp(approval.createdAt);
+
+  return {
+    actionKind: "review-request",
+    category: "low-confidence",
+    confidence: 50,
+    contextLabel: "Backend approval",
+    customerName: "Customer",
+    draftTitle: "Approval request",
+    icon: images.iconApprovals,
+    id: approval.id,
+    issueTitle: approval.riskCategory ?? "Approval requires owner or manager review.",
+    orderId: "Backend record",
+    primaryActionLabel: "Review request",
+    recommendation: "Review this backend approval before making a decision.",
+    riskLabel: "Review needed",
+    riskLevel: "medium",
+    sourceLabel: "Neo backend",
+    subtitle: timestamp,
+    suggestionTitle: "Recommendation",
+    timestamp,
+  };
+}
+
+function getBackendApprovalCategory(approval: BackendApproval): ApprovalCategory {
+  if (approval.aiDraft?.confidence === "low") {
+    return "low-confidence";
+  }
+
+  if (approval.riskCategory === "complaint" || approval.riskCategory === "refund") {
+    return "complaints";
+  }
+
+  if (approval.riskCategory === "discount") {
+    return "discounts";
+  }
+
+  if (approval.riskCategory === "payment") {
+    return "payments";
+  }
+
+  return "low-confidence";
+}
+
+function getBackendApprovalIcon(category: ApprovalCategory): ImageSourcePropType {
+  if (category === "payments") {
+    return images.iconReceiptReview;
+  }
+
+  if (category === "complaints") {
+    return images.iconInbox;
+  }
+
+  if (category === "discounts") {
+    return images.iconPaid;
+  }
+
+  return images.iconAiDraft;
+}
+
+function getBackendDraftTitle(category: ApprovalCategory): string {
+  if (category === "complaints") {
+    return "Sensitive complaint draft";
+  }
+
+  if (category === "discounts") {
+    return "Discount draft";
+  }
+
+  if (category === "payments") {
+    return "Payment-sensitive draft";
+  }
+
+  return "Low-confidence reply";
+}
+
+function getBackendRiskLabel(category: ApprovalCategory): string {
+  if (category === "complaints") {
+    return "Customer care";
+  }
+
+  if (category === "discounts") {
+    return "Commercial risk";
+  }
+
+  if (category === "payments") {
+    return "Payment risk";
+  }
+
+  return "Low confidence";
+}
+
+function getBackendRiskLevel(
+  category: ApprovalCategory,
+  confidence: "high" | "low" | "medium",
+): ApprovalRiskLevel {
+  if (category === "complaints" || category === "payments") {
+    return "high";
+  }
+
+  if (category === "discounts" || confidence === "medium") {
+    return "medium";
+  }
+
+  return "low";
+}
+
+function getDefaultIssueTitle(category: ApprovalCategory): string {
+  if (category === "complaints") {
+    return "Complaint or refund language needs careful human review.";
+  }
+
+  if (category === "discounts") {
+    return "Discount language may affect margin or policy.";
+  }
+
+  if (category === "payments") {
+    return "Payment language must not confirm a transfer from screenshots alone.";
+  }
+
+  return "Neo is not confident enough to send this without review.";
+}
+
+function confidenceScore(confidence: "high" | "low" | "medium"): number {
+  if (confidence === "high") {
+    return 88;
+  }
+
+  if (confidence === "low") {
+    return 48;
+  }
+
+  return 68;
+}
+
+function formatApprovalTimestamp(createdAt: string): string {
+  const date = new Date(createdAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Recently";
+  }
+
+  return date.toLocaleString("en-NG", {
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    month: "short",
   });
 }

@@ -6,7 +6,7 @@ This document lists the immediate integration steps required after the local MVP
 
 ## Current Status
 
-The app scaffold and primary MVP screens exist. Clerk wiring, commerce records, permissions/audit checks, and WhatsApp workflow wiring now have backend paths. AI generation, receipt OCR/media intake, payment verification, launch hardening, and full signed-in QA remain open.
+The app scaffold and primary MVP screens exist. Clerk wiring, commerce records, permissions/audit checks, WhatsApp workflow wiring, and AI draft generation now have backend paths. Receipt OCR/media intake, payment verification, launch hardening, provider credential rotation, and full signed-in QA remain open.
 
 Run only one integration pass at a time. Do not configure services, install service packages, or add backend behavior outside the selected prompt.
 
@@ -14,11 +14,11 @@ Run only one integration pass at a time. Do not configure services, install serv
 
 1. Finish live QA and credential rotation.
 
-   Verify Clerk and Meta WhatsApp flows with real test accounts/numbers, then rotate the Meta credentials shared during setup.
+   Verify Clerk, Meta WhatsApp, and OpenAI draft flows with real test accounts/numbers, then rotate the provider credentials shared during setup.
 
-2. Complete AI draft generation backend.
+2. Harden AI draft launch behavior.
 
-   Run B08 only after AI provider secrets, prompt policy, and endpoint contracts are approved.
+   Review draft quality, sensitive guardrail routing, approval queue behavior, and analytics privacy with live backend data.
 
 3. Harden WhatsApp launch behavior.
 

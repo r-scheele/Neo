@@ -10,7 +10,10 @@ import { colors } from "@/constants/colors";
 import { images } from "@/constants/images";
 import {
   getWhatsAppConversation,
+  requestAiDraft,
   sendWhatsAppMessage,
+  type AiDraftPreferencesPayload,
+  type BackendAiDraft,
   type BackendWhatsAppConversationDetail,
   type BackendWhatsAppLabel,
   useApiClient,
@@ -21,6 +24,8 @@ import {
   trackScreenStateSeen,
 } from "@/lib/analytics";
 import { Link, Pressable, ScrollView, Text, TextInput, View } from "@/src/tw";
+import { useSetupStore } from "@/stores/useSetupStore";
+import type { AiPersonalitySettings } from "@/stores/useSetupStore";
 
 type ConversationViewState = "ready" | "loading" | "error";
 type Sender = "customer" | "staff";
@@ -59,10 +64,18 @@ type ContextItem = {
 };
 
 type AiDraft = {
+  approvalId?: string;
+  approvalRequired?: boolean;
   body: string;
   confidence: "medium" | "high" | "low";
   guardrail: string;
+  id?: string;
+  reasonCode?: string;
+  riskCategory?: string;
+  riskReasons?: readonly string[];
   sourceChips: readonly ConversationChip[];
+  status?: string;
+  suggestedAction?: string;
 };
 
 type ConversationRecord = {
@@ -358,7 +371,7 @@ function getDraftModeLabel(mode: DraftReviewMode) {
   }
 
   if (mode === "sent") {
-    return "Sent locally";
+    return "Sent";
   }
 
   if (mode === "takeover") {
@@ -436,6 +449,55 @@ function normalizeBackendConversationDetail(
       meta: item.meta,
       title: item.title,
     })),
+  };
+}
+
+function normalizeBackendAiDraft(draft: BackendAiDraft): AiDraft {
+  return {
+    approvalId: draft.approvalId,
+    approvalRequired: draft.approvalRequired,
+    body: draft.body,
+    confidence: draft.confidence,
+    guardrail: draft.guardrail,
+    id: draft.id,
+    reasonCode: draft.reasonCode,
+    riskCategory: draft.riskCategory,
+    riskReasons: draft.riskReasons,
+    sourceChips: draft.sourceChips.map((label) => ({
+      icon: backendDraftSourceIcon(label),
+      label,
+      tone: label.includes("Approval") || label.includes("low") ? "warning" : "neutral",
+    })),
+    status: draft.status,
+    suggestedAction: draft.suggestedAction,
+  };
+}
+
+function backendDraftSourceIcon(label: string): ImageSourcePropType {
+  if (label.includes("WhatsApp")) {
+    return images.iconInbox;
+  }
+
+  if (label.includes("Confidence")) {
+    return images.iconApprovals;
+  }
+
+  if (label.includes("Approval")) {
+    return images.iconPermission;
+  }
+
+  return images.iconAiDraft;
+}
+
+function aiPreferencesPayload(
+  settings: AiPersonalitySettings,
+): AiDraftPreferencesPayload {
+  return {
+    approvalGuardrails: settings.approvalGuardrails,
+    customerAddress: settings.customerAddress,
+    replyLength: settings.replyLength,
+    tone: settings.tone,
+    useNigerianEnglish: settings.useNigerianEnglish,
   };
 }
 
@@ -823,10 +885,12 @@ function AiDraftCard({
             />
             <View className="min-w-0 flex-1">
               <Text className="text-[16px] font-bold leading-5 text-neo-success">
-                Draft marked sent
+                {draft.id ? "Draft sent" : "Draft marked sent"}
               </Text>
               <Text className="mt-1 text-[14px] leading-5 text-neo-text">
-                This is local feedback only. No WhatsApp message was sent.
+                {draft.id
+                  ? "Message was sent through the WhatsApp backend."
+                  : "This is local feedback only. No WhatsApp message was sent."}
               </Text>
             </View>
           </View>
@@ -949,13 +1013,80 @@ function AiDraftCard({
             }`}
           >
             {isSent
-              ? "Local success feedback only. Send behavior is intentionally not connected yet."
+              ? draft.id
+                ? "Sent through the backend. Keep payment and receipt confirmations manual."
+                : "Local success feedback only. Send behavior is intentionally not connected yet."
               : isTakeover
                 ? "Draft actions are paused while human takeover is active."
                 : draft.guardrail}
           </Text>
         </View>
       </View>
+    </View>
+  );
+}
+
+function GenerateDraftPanel({
+  actionsDisabled,
+  isRequestingDraft,
+  onGenerateDraft,
+}: {
+  actionsDisabled: boolean;
+  isRequestingDraft: boolean;
+  onGenerateDraft: () => void;
+}) {
+  const disabled = actionsDisabled || isRequestingDraft;
+
+  return (
+    <View className="mt-4 rounded-lg border border-neo-border bg-neo-surface px-4 py-4">
+      <View className="flex-row items-start gap-3">
+        <View className="h-12 w-12 items-center justify-center rounded-lg bg-[#EDF6FA]">
+          <Image
+            accessibilityIgnoresInvertColors
+            resizeMode="contain"
+            source={images.iconAiDraft}
+            style={{ height: 28, tintColor: colors.info, width: 28 }}
+          />
+        </View>
+        <View className="min-w-0 flex-1">
+          <Text className="text-[17px] font-bold leading-6 text-neo-text">
+            Need a reply draft?
+          </Text>
+          <Text className="mt-1 text-[14px] leading-5 text-neo-text-muted">
+            Neo can draft from this WhatsApp thread and keep sensitive replies in
+            approval.
+          </Text>
+        </View>
+      </View>
+
+      <Pressable
+        accessibilityLabel="Generate AI draft"
+        accessibilityRole="button"
+        accessibilityState={{ disabled }}
+        className={`mt-3 min-h-12 flex-row items-center justify-center rounded-lg px-4 ${
+          disabled ? "bg-neo-surface-alt" : "bg-neo-primary"
+        }`}
+        disabled={disabled}
+        onPress={onGenerateDraft}
+      >
+        <Image
+          accessibilityIgnoresInvertColors
+          resizeMode="contain"
+          source={images.iconAiDraft}
+          style={{
+            height: 22,
+            tintColor: disabled ? colors.textMuted : colors.surface,
+            width: 22,
+          }}
+        />
+        <Text
+          className={`ml-2 text-[15px] font-bold leading-5 ${
+            disabled ? "text-neo-text-muted" : "text-white"
+          }`}
+        >
+          {isRequestingDraft ? "Generating draft..." : "Generate AI draft"}
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -970,6 +1101,7 @@ function DraftActions({
   onNotice,
   onSendDraft,
   onTakeover,
+  sendDisabled,
 }: {
   actionsDisabled: boolean;
   conversationId?: string;
@@ -980,12 +1112,14 @@ function DraftActions({
   onNotice: (message: string) => void;
   onSendDraft: () => void;
   onTakeover: () => void;
+  sendDisabled?: boolean;
 }) {
   const orderHref = conversationId
     ? (`/order/new?conversationId=${encodeURIComponent(conversationId)}` as Href)
     : ("/order/new" as Href);
   const draftActionsDisabled =
     actionsDisabled || mode === "takeover" || mode === "sent" || mode === "editing";
+  const sendActionDisabled = draftActionsDisabled || isSendingDraft || sendDisabled;
 
   return (
     <View className="mt-4 gap-3">
@@ -994,11 +1128,11 @@ function DraftActions({
           mode === "sent" ? "AI draft already marked sent" : "Review and send AI draft"
         }
         accessibilityRole="button"
-        accessibilityState={{ disabled: draftActionsDisabled || isSendingDraft }}
+        accessibilityState={{ disabled: sendActionDisabled }}
         className={`min-h-14 flex-row items-center justify-center rounded-lg px-4 ${
-          draftActionsDisabled || isSendingDraft ? "bg-neo-surface-alt" : "bg-neo-primary"
+          sendActionDisabled ? "bg-neo-surface-alt" : "bg-neo-primary"
         }`}
-        disabled={draftActionsDisabled || isSendingDraft}
+        disabled={sendActionDisabled}
         onPress={onSendDraft}
       >
         <Image
@@ -1007,13 +1141,13 @@ function DraftActions({
           source={images.iconAiDraft}
           style={{
             height: 22,
-            tintColor: draftActionsDisabled || isSendingDraft ? colors.textMuted : colors.surface,
+            tintColor: sendActionDisabled ? colors.textMuted : colors.surface,
             width: 22,
           }}
         />
         <Text
           className={`ml-2 text-[16px] font-bold leading-5 ${
-            draftActionsDisabled || isSendingDraft ? "text-neo-text-muted" : "text-white"
+            sendActionDisabled ? "text-neo-text-muted" : "text-white"
           }`}
         >
           {isSendingDraft
@@ -1022,7 +1156,9 @@ function DraftActions({
               ? "Draft marked sent"
               : mode === "takeover"
                 ? "Draft paused"
-                : "Review and send draft"}
+                : sendDisabled
+                  ? "Approval required"
+                  : "Review and send draft"}
         </Text>
       </Pressable>
 
@@ -1332,6 +1468,9 @@ export function ConversationDetailScreen({
   initialState?: MockScreenState;
 }) {
   const apiClient = useApiClient();
+  const aiPersonalitySettings = useSetupStore(
+    (store) => store.aiPersonalitySettings,
+  );
   const { height, width } = useWindowDimensions();
   const isCompactPhone = height < 760 || width < 380;
   const horizontalPadding = width >= 390 ? 20 : 16;
@@ -1347,6 +1486,7 @@ export function ConversationDetailScreen({
   const [draftText, setDraftText] = useState(initialDraftText);
   const [draftMode, setDraftMode] = useState<DraftReviewMode>("review");
   const [hasEditedDraft, setHasEditedDraft] = useState(false);
+  const [isRequestingDraft, setIsRequestingDraft] = useState(false);
   const [isSendingDraft, setIsSendingDraft] = useState(false);
   const [isSendingManualMessage, setIsSendingManualMessage] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -1456,7 +1596,11 @@ export function ConversationDetailScreen({
   function editDraft() {
     if (activeConversation?.aiDraft) {
       setDraftMode("editing");
-      setNotice("Edit this draft locally before reviewing it.");
+      setNotice(
+        activeConversation.aiDraft.approvalRequired
+          ? "This draft needs approval. You can edit it here, but it cannot be sent from this screen yet."
+          : "Edit this draft before reviewing it.",
+      );
     }
   }
 
@@ -1480,15 +1624,91 @@ export function ConversationDetailScreen({
     setNotice("Draft edits saved locally. Nothing was sent.");
   }
 
-  function reviewAndSendDraft() {
+  async function requestDraft() {
+    if (!conversationId || fixtureConversation) {
+      setNotice("Backend AI drafts are available only for live WhatsApp conversations.");
+      return;
+    }
+
+    setIsRequestingDraft(true);
+    const result = await requestAiDraft(
+      apiClient,
+      conversationId,
+      aiPreferencesPayload(aiPersonalitySettings),
+    );
+    setIsRequestingDraft(false);
+
+    if (!result.ok) {
+      setNotice(result.error.message);
+      return;
+    }
+
+    const normalizedDraft = normalizeBackendAiDraft(result.data.draft);
+    setBackendConversation((currentConversation) => {
+      const baseConversation = currentConversation ?? activeConversation;
+
+      return baseConversation
+        ? { ...baseConversation, aiDraft: normalizedDraft }
+        : currentConversation;
+    });
+    setDraftText(normalizedDraft.body);
+    setDraftMode("review");
+    setHasEditedDraft(false);
+    setNotice(
+      normalizedDraft.approvalRequired
+        ? "Draft needs owner or manager approval and was added to Approvals."
+        : "Draft ready for human review. Neo will not send without your tap.",
+    );
+  }
+
+  async function reviewAndSendDraft() {
     if (!draftText.trim()) {
       setNotice("Draft cannot be sent while empty.");
       return;
     }
 
+    const currentDraft = activeConversation?.aiDraft;
+
+    if (currentDraft?.approvalRequired) {
+      setNotice("This draft is waiting in Approvals and cannot be sent from here yet.");
+      return;
+    }
+
+    const editedBeforeSend = hasEditedDraft;
+
+    if (conversationId && !fixtureConversation && currentDraft?.id) {
+      setIsSendingDraft(true);
+      const result = await sendWhatsAppMessage(
+        apiClient,
+        conversationId,
+        draftText.trim(),
+      );
+      setIsSendingDraft(false);
+
+      if (!result.ok) {
+        setNotice(result.error.message);
+        return;
+      }
+
+      setBackendConversation({
+        ...normalizeBackendConversationDetail(result.data.conversation),
+        aiDraft: {
+          ...currentDraft,
+          body: draftText.trim(),
+          status: "sent",
+        },
+      });
+      setDraftMode("sent");
+      trackAnalyticsEvent("ai_draft_sent", {
+        draft_type: currentDraft.riskCategory ?? "reply",
+        edited_before_send: editedBeforeSend,
+      });
+      setNotice("Draft sent through the WhatsApp backend.");
+      return;
+    }
+
     setIsSendingDraft(true);
     setNotice("Reviewing draft locally. No WhatsApp message is being sent.");
-    const editedBeforeSend = hasEditedDraft;
 
     if (sendTimerRef.current) {
       clearTimeout(sendTimerRef.current);
@@ -1636,11 +1856,22 @@ export function ConversationDetailScreen({
                     mode={draftMode}
                     onEdit={editDraft}
                     onNotice={showNotice}
-                    onSendDraft={reviewAndSendDraft}
+                    onSendDraft={() => {
+                      void reviewAndSendDraft();
+                    }}
                     onTakeover={takeOverConversation}
+                    sendDisabled={activeConversation.aiDraft.approvalRequired === true}
                   />
                 </>
-              ) : null}
+              ) : (
+                <GenerateDraftPanel
+                  actionsDisabled={actionsDisabled || !conversationId || Boolean(fixtureConversation)}
+                  isRequestingDraft={isRequestingDraft}
+                  onGenerateDraft={() => {
+                    void requestDraft();
+                  }}
+                />
+              )}
 
               {notice ? (
                 <View className="mt-4 rounded-lg border border-neo-info bg-[#EDF6FA] px-4 py-3">

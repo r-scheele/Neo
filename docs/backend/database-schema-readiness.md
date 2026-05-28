@@ -47,8 +47,8 @@ Result:
 
 - RLS policies are not implemented yet. B04 added the server auth/profile bootstrap, and B06 now adds authoritative permissions/audit handling in Edge Functions for current sensitive commerce endpoints.
 - Storage buckets and storage policies are documented but not created remotely.
-- B05-B07 endpoint contracts are approved and implemented for current commerce and WhatsApp workflows. B08 still needs implementation-level review.
-- `ai_drafts.draft_text`, WhatsApp message previews, and raw webhook payload storage need privacy review during their feature prompts before real customer data is stored.
+- B05-B08 endpoint contracts are approved and implemented for current commerce, WhatsApp, and AI draft workflows.
+- `ai_drafts.draft_text`, WhatsApp message previews, and raw webhook payload storage need continued privacy review before production launch.
 
 ## Remote Push Result
 
@@ -69,4 +69,4 @@ Notes:
 
 ## Next Backend Prompt
 
-Do not run `docs/integration-prompts/backend-deferred/prompts/B08-ai-draft-generation-backend.md` until its AI secrets/contracts are ready.
+B08 is implemented for MVP wiring. Continue with live QA, key rotation, and launch hardening before production.

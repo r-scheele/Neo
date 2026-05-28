@@ -1,7 +1,7 @@
 # B08 AI Draft Generation Backend Prompt
 
 Status:
-Deferred until B03-B04 are complete and AI provider secrets/prompt policy are approved.
+Complete for MVP wiring. B08 now generates drafts server-side, routes sensitive/low-confidence drafts to approvals, and keeps provider secrets out of the Expo app.
 
 Do not run this prompt until:
 - B03 database schema readiness is complete
@@ -79,3 +79,11 @@ Stop when:
 ## Suggested commit message
 
 `connect ai draft workflow`
+
+## Implementation Notes
+
+- `ai-drafts` Edge Function calls the AI provider with server-owned `OPENAI_API_KEY`.
+- Conversation Detail requests drafts through `lib/api/` using safe AI personality preferences only.
+- Low-confidence, payment, refund, discount, and complaint drafts can route to backend approvals.
+- Approval Queue loads backend approval records and records decisions through the server permission/audit path.
+- Rotate the shared OpenAI test key after validation.

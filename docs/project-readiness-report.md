@@ -52,7 +52,7 @@ The Expo/React Native app scaffold exists. The primary MVP screens, route groups
 - Live Clerk test-account QA for auth, setup guards, protected redirects, and sign-out clearing.
 - Full signed-in execution of the manual QA baseline.
 - Live owner/manager/staff QA for trusted server-side role enforcement on backend-backed sensitive actions.
-- Feature endpoints for WhatsApp, AI, OCR/payment verification, remaining customer/team workflows, and sync.
+- Feature endpoints for OCR/payment verification, remaining customer/team workflows, and sync.
 - Transaction-safe audit/mutation hardening for high-risk backend writes.
 - Production PostHog public env values and event QA.
 - Automated unit/integration test setup, if product decides it is required before release.
@@ -61,11 +61,11 @@ The Expo/React Native app scaffold exists. The primary MVP screens, route groups
 
 1. Complete and record the signed-in portions of `docs/manual-qa-baseline.md` with a real Clerk test account.
 2. Keep `docs/client-release-readiness-precheck.md` and `docs/release-blockers.md` aligned after manual QA.
-3. Do not run B07-B08 until required auth/secrets/contracts are ready.
+3. Do not run later provider/media/payment prompts until required auth/secrets/contracts are ready.
 4. After the client precheck blockers are closed, decide whether automated E2E tooling is required before release candidate work.
 
 ## Readiness Verdict
 
-Ready for manual QA and the remaining backend integration passes.
+Ready for manual QA, launch hardening, and the remaining backend integration passes.
 
 Not release-ready. Neo should remain a local MVP prototype until full signed-in manual QA, remaining backend integrations in `docs/integration-priority-order.md` and `docs/missing-integrations.md`, and launch hardening are completed.

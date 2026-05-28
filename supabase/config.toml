@@ -404,6 +404,9 @@ verify_jwt = false
 [functions.approvals]
 verify_jwt = false
 
+[functions.ai-drafts]
+verify_jwt = false
+
 [functions.whatsapp-send-message]
 verify_jwt = false
 

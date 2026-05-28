@@ -55,8 +55,8 @@ These decisions are approved for the B01 foundation:
 These implementation decisions remain before feature-complete backend work:
 
 - Storage bucket creation and policies.
-- Supabase secrets values for `CLERK_SECRET_KEY`, OpenAI, Meta WhatsApp, and PostHog.
-- Feature endpoint implementation for B08 and later media/payment workflows. B05 commerce endpoints, B06 permissions/audit handling, and B07 WhatsApp workflow endpoints are implemented for current MVP flows.
+- Supabase secrets values for `CLERK_SECRET_KEY` and PostHog.
+- Later media/payment workflow endpoint implementation. B05 commerce endpoints, B06 permissions/audit handling, B07 WhatsApp workflow endpoints, and B08 AI draft generation are implemented for current MVP flows.
 
 ## Secrets Boundary
 
@@ -324,7 +324,7 @@ Required server behavior:
 
 ## Current Fixture Boundary
 
-These files remain dev-only data sources until backend endpoints exist:
+These files remain dev-only fallback data sources until each backend endpoint is live-tested:
 
 - `features/today/todayCommandData.ts`
 - `features/inbox/inboxConversationData.ts`
@@ -338,7 +338,7 @@ They may support local screen rendering, manual UI QA, and design iteration. The
 
 ## Future Client API Boundary
 
-`lib/api/` now exists from B02 and owns the typed mobile API boundary. Do not use it to replace fixture data until the matching backend feature prompt is implemented.
+`lib/api/` now exists from B02 and owns the typed mobile API boundary. Use it only for matching backend feature prompts that are implemented and verified.
 
 The future client boundary should include:
 
@@ -368,7 +368,7 @@ Do not commit `.env`. Do not put private Supabase service role keys, database pa
 - Backend/server ownership is defined for every P0 workflow.
 - Client-secret boundaries are explicit.
 - Current local fixtures are marked dev-only.
-- No real provider calls are added.
+- Real provider calls happen only in server-owned Edge Functions.
 - Public env placeholders are empty.
 - No new packages are added.
 - TypeScript and lint remain green.

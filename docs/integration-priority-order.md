@@ -27,7 +27,7 @@ The Phase A prompt set has been run. A partial local preflight and route-smoke Q
 
 Phase B lives in `docs/integration-prompts/backend-deferred/`.
 
-Backend provider-level decisions are approved, B01-B06 are complete, the remote schema is pushed, and current commerce functions now include trusted permissions/audit handling. Continue in backend-deferred numeric order only when each prompt's prerequisites are ready.
+Backend provider-level decisions are approved, B01-B08 are complete, the remote schema is pushed, and current commerce, permissions/audit, WhatsApp, and AI draft functions have backend paths. Continue later backend prompts only when each prompt's prerequisites are ready.
 
 | Order | Integration | Status | Unlocking decision |
 | --- | --- | --- | --- |
@@ -38,7 +38,7 @@ Backend provider-level decisions are approved, B01-B06 are complete, the remote 
 | B05 | Commerce records backend sync | Complete | Commerce endpoints deployed and client sync wiring added. |
 | B06 | Server-side permissions and audit logs | Complete | Trusted role checks and audit writes for current sensitive commerce endpoints. |
 | B07 | WhatsApp workflow integration | Complete | Meta WhatsApp secrets in Supabase secrets; webhook/status/conversation/send endpoints implemented. |
-| B08 | AI draft generation backend | Deferred | B04 plus server-side AI provider/prompt policy implemented. |
+| B08 | AI draft generation backend | Complete | Server-side AI provider secret, guardrail policy, and live WhatsApp context implemented. |
 
 ## Manual Regression Set After Each Runnable Prompt
 

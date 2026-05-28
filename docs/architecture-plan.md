@@ -18,11 +18,11 @@ Status: Current client architecture for the local MVP prototype. App source exis
 
 Neo should be built as a mobile-first Expo app using React Native, TypeScript, Expo Router, NativeWind, Zustand, AsyncStorage, Clerk, PostHog, and EAS Build.
 
-The current implementation is an app-first MVP prototype built feature by feature with typed local/mock fallbacks, generated assets, clear route boundaries, and a Supabase backend boundary for commerce and WhatsApp workflows. Real AI, receipt extraction, payment, remaining media handling, and broader multi-user sync integrations still require server-owned implementation because their secrets and sensitive operations cannot safely live in a mobile client.
+The current implementation is an app-first MVP prototype built feature by feature with typed local/mock fallbacks, generated assets, clear route boundaries, and a Supabase backend boundary for commerce, WhatsApp, and AI draft workflows. Receipt extraction, payment, remaining media handling, and broader multi-user sync integrations still require server-owned implementation because their secrets and sensitive operations cannot safely live in a mobile client.
 
 ## Primary Decision
 
-The client app has been built first. The backend provider is now selected as Supabase, with Supabase Postgres, Edge Functions, and Storage. Keep the current fixture-driven client intact until B05-B08 complete the backend feature workflows.
+The client app has been built first. The backend provider is now selected as Supabase, with Supabase Postgres, Edge Functions, and Storage. Keep the current fixture fallbacks isolated while B05-B08 backend feature workflows are live-tested and launch-hardened.
 
 This keeps service work narrow and lets design, navigation, assets, state ownership, TypeScript, and linting stay stable before live integrations are added. Production integrations must be introduced through ordered backend prompts, not broad rewrites.
 
@@ -58,7 +58,7 @@ The B01 backend foundation answers the provider-level decisions:
 - Owner/staff permissions must be enforced in Edge Functions.
 - Audit logs live in Supabase Postgres with safe metadata.
 
-Feature implementation remains deferred to B05-B08. B04 now supplies the local server auth/profile bootstrap foundation.
+Feature implementation for B05-B08 is complete for MVP wiring. B04 supplies the local server auth/profile bootstrap foundation.
 
 ## Route Architecture
 
@@ -165,4 +165,4 @@ Every implementation step should keep these checks green:
 
 ## Ready For Next Step
 
-This architecture is ready for the remaining ordered backend integration passes. B01 Supabase foundation, B02 API client/auth boundary, B03 database schema readiness, B04 server auth/profile bootstrap, B05 commerce records backend sync, B06 server-side permissions/audit logging, and B07 WhatsApp workflow integration are complete; do not run B08 until AI provider prerequisites are approved.
+This architecture is ready for launch hardening and later media/payment integration passes. B01 Supabase foundation, B02 API client/auth boundary, B03 database schema readiness, B04 server auth/profile bootstrap, B05 commerce records backend sync, B06 server-side permissions/audit logging, B07 WhatsApp workflow integration, and B08 AI draft generation are complete for MVP wiring.
