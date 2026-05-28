@@ -33,10 +33,16 @@
     "typecheck": "tsc --noEmit"
   },
   "overrides": {
-    "lightningcss": "1.30.1"
+    "lightningcss": "1.30.1",
+    "jayson": {
+      "uuid": "11.1.1"
+    },
+    "xcode": {
+      "uuid": "11.1.1"
+    }
   },
   "dependencies": {
-    "@clerk/clerk-expo": "^2.19.31",
+    "@clerk/clerk-expo": "^2.19.36",
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~56.0.5",
     "expo-application": "~56.0.3",
