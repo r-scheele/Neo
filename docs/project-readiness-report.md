@@ -1,78 +1,70 @@
 # Project Readiness Report
 
-Date: 2026-05-24
+Date: 2026-05-27
 
 ## Current Phase
 
-Neo is currently in the Practical Vibe Coding planning and asset-preparation phase.
+Neo is in the local MVP prototype and integration-readiness phase.
 
-The workspace has strong product, visual direction, UI style, screen-state, image prompt, and generated asset foundations. It is not ready for app feature coding yet because there is no Expo/React Native app project, no architecture plan, no `AGENTS.md`, no `package.json`, no source tree, no image constants file, and no Home-screen implementation spec or UI reference image in the expected location.
+The Expo/React Native app scaffold exists. The primary MVP screens, route groups, runtime image registry, design tokens, Clerk wiring, route guards, safe local setup/preferences persistence, typed analytics helpers, typed API/auth boundary, screen-state coverage, local-only state hardening, manual QA baseline, partial manual QA results, client release precheck, and Supabase backend foundation are implemented for local use. The app is not ready for a client release candidate or real MVP release because full signed-in Clerk/manual QA, backend-backed commerce data, WhatsApp sync, AI calls, payment verification, trusted permissions, and audit logs remain pending.
 
 ## Workspace Inspection
 
 | Item | Status | Notes |
 | --- | --- | --- |
-| `ai-mobile-build-kit/` | Exists | Practical Vibe Coding kit and templates are present |
-| `docs/product-brief.md` | Exists | Canonical product brief is present |
-| `docs/mvp-scope.md` | Created | Draft canonical MVP scope created from existing planning docs |
-| `docs/screen-map.md` | Exists | Canonical screen map is present |
-| `docs/feature-backlog.md` | Created | Draft canonical backlog created from existing initial backlog |
-| `docs/visual-direction.md` | Exists | Canonical visual direction is present |
-| `docs/ui-style-guide.md` | Exists | Canonical UI style guide is present |
-| `docs/screen-state-inventory.md` | Exists | Canonical state coverage is present |
-| `docs/asset-inventory.md` | Exists | Asset inventory is present and references generated image assets |
-| `docs/ui-design-prompts/` | Missing | Needed before screen-by-screen implementation prompts can be generated |
-| `design-assets/` | Missing | Needed for attached UI design references such as `design-assets/ui-screens/home.png` |
-| `AGENTS.md` | Missing | Should not be created until architecture plan exists |
-| `package.json` | Missing | No app project has been scaffolded |
-| `app/` | Missing | No Expo Router source tree exists |
-| `components/` | Missing | No shared component layer exists |
-| `constants/` | Missing | No app constants or `constants/images.ts` exists |
-| `assets/images/` | Exists | 42 generated raster assets are present |
+| `AGENTS.md` | Exists | Current project rules and product guardrails are present. |
+| `package.json` | Exists | Expo scripts for start, web, iOS, Android, lint, and typecheck are present. |
+| `app/` | Exists | Expo Router auth, setup, tabs, detail, and modal routes are present. |
+| `components/` | Exists | Feedback and layout components exist. |
+| `features/` | Exists | MVP feature screens and typed fixture/local data exist. |
+| `stores/` | Exists | Setup, user preference, operations, connectivity, safe storage reset, and related local stores exist; customer-facing draft text remains component-local until a storage decision is approved. |
+| `lib/` | Exists | Analytics, safe storage, and API client boundary helpers exist. |
+| `supabase/` | Exists | Supabase project is linked; migration and Edge Function scaffolds exist locally. |
+| `constants/` | Exists | Colors, spacing, typography, routes, and runtime image imports exist. |
+| `assets/images/` | Exists | Runtime raster assets are present and referenced through `constants/images.ts`. |
+| `.env.example` | Exists | Contains public Expo client placeholders only. |
+| `metro.config.js` | Exists | Wraps the Expo Metro config with NativeWind. |
+| `postcss.config.mjs` | Exists | Uses `@tailwindcss/postcss` for Tailwind v4. |
+| `src/global.css` | Exists | Holds Tailwind v4 CSS-first imports and Neo theme tokens. |
+| `babel.config.js` | Intentionally absent | Not required by the current NativeWind v5 setup. |
+| `tailwind.config.js` | Intentionally absent | Optional for advanced Tailwind v4 customization only. |
+| `nativewind.config.js` | Intentionally absent | Not used by the current stack. |
 
 ## What Already Exists
 
-- Practical Vibe Coding build kit and templates in `ai-mobile-build-kit/`.
-- Product foundation in `docs/product-brief.md`.
-- Screen structure in `docs/screen-map.md`.
-- Visual system in `docs/visual-direction.md` and `docs/ui-style-guide.md`.
-- Screen state coverage in `docs/screen-state-inventory.md`.
-- Asset inventory in `docs/asset-inventory.md`.
-- Generated images in `assets/images/`.
-- Production SVG icons in `assets/icons/`.
-- Draft source planning docs in `docs/initial-mvp-scope.md`, `docs/initial-feature-backlog.md`, and `docs/initial-screen-map.md`.
+- Expo app shell with Expo Router.
+- Welcome, sign-in, setup, tabs, detail, receipt, customer, order, and permission routes.
+- Clerk provider, auth screens, route guards, setup guards, protected tabs, protected details, and sign-out clearing.
+- Local/mock MVP screens for Today, Inbox, Conversation, Orders, Approvals, Receipt Review, Follow-ups, Customer Profile, Settings, and setup.
+- Runtime image registry through `constants/images.ts`.
+- NativeWind/Tailwind tokens in `src/global.css`.
+- Safe local setup and preference persistence using Zustand and AsyncStorage.
+- Safe shared operations/connectivity metadata for local tab counts and offline UI.
+- PostHog helper boundaries that no-op when public keys are missing.
+- Typed API client boundary in `lib/api/`.
+- Supabase project foundation linked to project ref `xtalfjnmxnwtogxgtlxn`.
+- Local Supabase migration, storage/secrets docs, and Edge Function stubs.
+- Manual QA baseline, partial manual QA results, and client release readiness precheck docs.
+- Audit, integration order, release blocker, and integration prompt docs.
 
-## What Is Missing
+## What Is Missing For Real MVP
 
-- `docs/architecture-plan.md` or equivalent stack/architecture decision document.
-- `AGENTS.md` generated for this project.
-- Expo/React Native app source files.
-- `package.json`, TypeScript config, lint config, and app scripts.
-- `constants/images.ts` mapping generated assets into app-safe imports.
-- `docs/ui-design-prompts/screens/home-screen.md`.
-- `design-assets/ui-screens/home.png`.
-- `docs/ui-design-prompts/` directory for screen implementation specs.
-- `design-assets/` directory for UI reference screenshots.
+- Live Clerk test-account QA for auth, setup guards, protected redirects, and sign-out clearing.
+- Full signed-in execution of the manual QA baseline.
+- Trusted server-side role enforcement for sensitive actions.
+- Feature endpoints for WhatsApp, AI, orders, receipts, payments, customers, follow-ups, audit logs, and sync.
+- Production PostHog public env values and event QA.
+- Automated unit/integration test setup, if product decides it is required before release.
 
-## What Must Happen Before Coding Starts
+## Current Next Actions
 
-1. Approve or adjust the recovered canonical planning docs: product brief, MVP scope, screen map, feature backlog, visual direction, UI style guide, screen state inventory, and asset inventory.
-2. Create a stack and architecture plan that defines Expo version strategy, routing model, folder structure, styling approach, asset handling, state/data strategy, lint/typecheck commands, and testing expectations.
-3. Create `AGENTS.md` only after the product docs, screen map, visual direction, UI style guide, and architecture plan are present.
-4. Scaffold the Expo/React Native app only after `AGENTS.md` exists.
-5. Generate screen-specific design prompts and reference assets before implementing any screen, starting with the Home/Today Command Center.
-
-## Exact Next 5 Actions
-
-1. Create `docs/architecture-plan.md` using the build kit architecture templates and the existing product/design docs.
-2. Create `AGENTS.md` from the completed planning docs and architecture plan.
-3. Scaffold the Expo/React Native app shell with package scripts for TypeScript and lint, without implementing feature screens.
-4. Create asset wiring such as `constants/images.ts` and verify the generated assets can be imported by the app.
-5. Create `docs/ui-design-prompts/screens/home-screen.md` and place the matching Home UI reference at `design-assets/ui-screens/home.png`, then implement only the Home screen in a separate coding step.
+1. Complete and record the signed-in portions of `docs/manual-qa-baseline.md` with a real Clerk test account.
+2. Keep `docs/client-release-readiness-precheck.md` and `docs/release-blockers.md` aligned after manual QA.
+3. Run B04 next for server auth/profile bootstrap if Clerk server verification inputs are ready; do not run B05-B08 until required auth/secrets/contracts are ready.
+4. After the client precheck blockers are closed, decide whether automated E2E tooling is required before release candidate work.
 
 ## Readiness Verdict
 
-Not ready for Home screen implementation yet.
+Ready for manual QA and backend decision work.
 
-The next correct move is architecture planning, not feature coding.
-
+Not release-ready. Neo should remain a local MVP prototype until full signed-in manual QA and the required backend integrations in `docs/integration-priority-order.md` and `docs/missing-integrations.md` are completed.

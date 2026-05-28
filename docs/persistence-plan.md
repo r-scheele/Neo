@@ -1,10 +1,10 @@
 # Persistence Plan
 
-Status: Draft persistence plan. No persistence code has been written.
+Status: Partial local MVP implementation. AsyncStorage helpers and setup/preference persistence exist; production sign-out clearing is wired through Clerk, operations/connectivity state is runtime-only, and sensitive-data boundaries still need integration hardening.
 
 ## Persistence Decision
 
-Use AsyncStorage only for small, safe local data in V1. Do not add a database during the initial app scaffold.
+Use AsyncStorage only for small, safe local data in V1. Do not add a database in the Expo client.
 
 AsyncStorage is not secure storage and must not hold secrets, auth tokens, raw customer conversations, receipt images, bank alerts, or sensitive payment proof.
 
@@ -21,7 +21,7 @@ AsyncStorage is not secure storage and must not hold secrets, auth tokens, raw c
 | Delivery zone drafts | Maybe | AsyncStorage | Medium | Yes | Safe enough for local draft; backend later |
 | Product basics drafts | Maybe | AsyncStorage | Medium | Yes | Keep small and clear on sign-out |
 | UI preferences | Yes | AsyncStorage | Low | Optional | Dismissed tips, selected non-sensitive view options |
-| Draft replies | Maybe | AsyncStorage | Medium/High | Yes | Only if product approves local draft persistence |
+| Draft replies | Maybe | AsyncStorage | Medium/High | Yes | Only if product approves local draft persistence; not owned by Zustand today |
 | Customer messages | No | Future backend | High | N/A | Do not persist private chat history locally for production |
 | Receipt images | No | Future backend/media storage | High | N/A | Do not store in AsyncStorage |
 | Bank alerts/payment proof | No | Future backend | High | N/A | Requires secure backend handling |
@@ -80,4 +80,3 @@ The database choice is intentionally deferred.
 ## Done Looks Like
 
 Persistence is ready when restart behavior is predictable, local data is safe to store, user-specific data clears on sign-out, and production-sensitive data waits for a proper backend.
-

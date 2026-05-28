@@ -43,4 +43,4 @@ Render these at `24px` for navigation and row actions. Use design tokens for col
 
 ## Expo Implementation Note
 
-For a future Expo app, prefer `lucide-react-native` for standard actions such as search, send, edit, filter, bell, check, and close. Use these SVG sources for Neo-specific navigation, categories, statuses, and branded workflow concepts.
+The current app uses existing runtime image assets and does not import SVG files directly. For a future approved icon-runtime pass, choose a documented React Native icon/SVG strategy before using `assets/icons/*.svg` in app code.

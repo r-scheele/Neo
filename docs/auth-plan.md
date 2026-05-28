@@ -1,6 +1,6 @@
 # Auth Plan
 
-Status: Draft auth plan. Clerk is selected for the future app setup, but no auth package has been installed.
+Status: Clerk auth wiring, route protection, and the B02 client API token handoff are implemented. Server-side token verification, staff roles, and authorization remain future work.
 
 ## Auth Requirement
 
@@ -11,7 +11,7 @@ Status: Draft auth plan. Clerk is selected for the future app setup, but no auth
 | Can a pure UI prototype work without auth? | Yes, but only as local/mock design work |
 | Can the real MVP work without auth? | No |
 | Default provider | Clerk |
-| Initial methods | Email or phone OTP, depending on implementation support and product choice |
+| Initial methods | Email/password with email verification for sign-up in the current Clerk pass |
 | Later methods | Google, Apple, organization/team flows |
 
 ## User States
@@ -53,6 +53,7 @@ V1 app UI may represent role gates locally for mocked flows. Production role enf
 | Business profile | Local draft in V1; future backend source of truth |
 | Staff role and permissions | Local/mock in V1; future backend or Clerk organization metadata |
 | App preferences | Zustand plus AsyncStorage for safe values |
+| Backend API auth header | Clerk `getToken()` through `lib/api/useApiClient.ts` |
 
 ## Sign-Out Rules
 
@@ -69,6 +70,7 @@ Do not manually clear provider-managed auth internals unless Clerk docs require 
 
 - Do not store auth tokens in AsyncStorage manually.
 - Do not expose private Clerk keys in the client.
+- Retrieve backend request tokens only through Clerk client APIs.
 - Use only publishable client keys in Expo public environment variables.
 - Do not treat client-side role checks as final authorization for payment or receipt decisions.
 - Do not show private customer content on public or logged-out routes.
@@ -85,5 +87,4 @@ Future architecture may add:
 
 ## Done Looks Like
 
-Auth planning is ready when a future setup prompt can implement route guards and Clerk wiring without inventing who can access what.
-
+Auth and route guard wiring are ready for the next persistence/state pass without inventing who can access what.

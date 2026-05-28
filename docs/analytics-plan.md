@@ -1,6 +1,6 @@
 # Analytics Plan
 
-Status: Draft analytics plan. PostHog is selected for later setup, but no analytics package has been installed.
+Status: Complete for Phase A production-safe wiring. PostHog is installed with typed helper boundaries, public env placeholders, no-key no-op behavior, safe event property filtering, and sign-out identity reset. Live event QA still requires real public PostHog values in an uncommitted local environment.
 
 ## Analytics Goal
 
@@ -10,7 +10,7 @@ Analytics must not collect private customer content, message text, receipt image
 
 ## Provider Decision
 
-Use PostHog for product analytics when the app scaffold is ready.
+Use PostHog for product analytics.
 
 Reason:
 
@@ -77,13 +77,13 @@ Use bands or categories instead of exact values for sensitive operational data. 
 
 ## Implementation Rules
 
-When implementation begins:
-
-- Centralize analytics in `lib/analytics/`.
+- Keep analytics centralized in `lib/analytics/`.
 - Type event names and event properties.
 - Keep analytics calls near user actions.
 - Ensure analytics failure never blocks app behavior.
-- Provide a no-op analytics implementation for local development if keys are missing.
+- Keep no-op behavior for local development when keys are missing.
+- Configure production public PostHog env values only in the PostHog integration pass.
+- Do not identify users with Clerk or other provider IDs in the client; the current Phase A decision is anonymous analytics plus reset on sign-out.
 - Document analytics in privacy-facing materials before launch.
 
 ## Future Analytics
@@ -101,4 +101,3 @@ These should wait until the MVP flows exist and event quality is reliable.
 ## Done Looks Like
 
 Analytics is ready when every tracked event answers a product question and excludes private commerce content.
-

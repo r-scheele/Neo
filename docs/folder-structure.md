@@ -1,6 +1,6 @@
 # Folder Structure
 
-Status: Proposed structure for the future Expo app. These folders have not been created yet.
+Status: Implemented baseline structure for the local MVP prototype. Continue using this structure for integration work.
 
 ## Recommended Structure
 
@@ -13,13 +13,13 @@ app/
   (setup)/
     _layout.tsx
     index.tsx
-    business.tsx
+    business-profile.tsx
     business-type.tsx
-    whatsapp.tsx
-    ai.tsx
-    payments.tsx
-    delivery.tsx
-    products.tsx
+    whatsapp-setup.tsx
+    ai-personality.tsx
+    payment-rules.tsx
+    delivery-zones.tsx
+    product-basics.tsx
   (tabs)/
     _layout.tsx
     today.tsx
@@ -37,6 +37,7 @@ app/
   customer/
     [id].tsx
   modals/
+    permission.tsx
 components/
   ui/
   forms/
@@ -74,6 +75,9 @@ features/
     data/
     hooks/
     types.ts
+  settings/
+  operations/
+  permissions/
 stores/
 lib/
   analytics/
@@ -147,5 +151,4 @@ docs/
 
 ## Done Looks Like
 
-The folder structure is ready when a future coding prompt can say exactly which route, feature folder, component folder, store, and constants file to touch.
-
+The folder structure is ready when each integration prompt can say exactly which route, feature folder, component folder, store, and constants file to touch.

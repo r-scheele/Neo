@@ -78,6 +78,10 @@ Planned stack:
 - AsyncStorage for safe, small local persistence.
 - Clerk for authentication.
 - PostHog for privacy-conscious product analytics.
+- Supabase for approved backend foundation:
+  - Supabase Postgres for durable records.
+  - Supabase Edge Functions for server-owned API execution.
+  - Supabase Storage for private media.
 - EAS Build.
 
 Current status:
@@ -99,7 +103,18 @@ Current status:
 
 ## Architecture
 
-Neo is an app-first mobile MVP. The first implementation should use typed local/mock data, generated assets, and clear route boundaries. Real WhatsApp sync, AI calls, receipt extraction, payment verification, team permission enforcement, and multi-user sync require a future backend boundary.
+Neo is an app-first mobile MVP. The first implementation should use typed local/mock data, generated assets, and clear route boundaries. Real WhatsApp sync, AI calls, receipt extraction, payment verification, team permission enforcement, and multi-user sync require the approved Supabase backend boundary.
+
+Approved backend foundation:
+- Backend provider: Supabase.
+- Database: Supabase Postgres.
+- Backend execution: Supabase Edge Functions.
+- Media storage: Supabase Storage.
+- Auth provider in Expo: Clerk.
+- Backend auth strategy: Clerk-authenticated requests to Supabase Edge Functions.
+- Public API base URL env var: `EXPO_PUBLIC_API_BASE_URL`.
+- Public Supabase env vars: `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
+- Server secrets live in Supabase secrets, not in the mobile app.
 
 Route architecture:
 - `app/(auth)/`: logged-out and identity routes such as `welcome` and `sign-in`.
@@ -309,6 +324,9 @@ Never put these in the Expo app:
 
 Allowed public Expo variables only when setup begins:
 - `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `EXPO_PUBLIC_SUPABASE_URL`
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+- `EXPO_PUBLIC_API_BASE_URL`
 - `EXPO_PUBLIC_POSTHOG_KEY`
 - `EXPO_PUBLIC_POSTHOG_HOST`
 
