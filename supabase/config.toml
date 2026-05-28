@@ -380,6 +380,27 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+[functions.health]
+verify_jwt = false
+
+[functions.me-bootstrap]
+verify_jwt = false
+
+[functions.setup-business]
+verify_jwt = false
+
+[functions.orders]
+verify_jwt = false
+
+[functions.customers]
+verify_jwt = false
+
+[functions.receipts]
+verify_jwt = false
+
+[functions.follow-ups]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
