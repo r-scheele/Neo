@@ -1,5 +1,10 @@
-import { PlaceholderScreen } from "@/components/layout/PlaceholderScreen";
+import { useLocalSearchParams } from "expo-router";
+
+import { getMockScreenState } from "@/components/feedback/ScreenState";
+import { InboxConversationListScreen } from "@/features/inbox/InboxConversationListScreen";
 
 export default function InboxRoute() {
-  return <PlaceholderScreen title="Inbox" />;
+  const { state } = useLocalSearchParams<{ state?: string | string[] }>();
+
+  return <InboxConversationListScreen initialState={getMockScreenState(state)} />;
 }
