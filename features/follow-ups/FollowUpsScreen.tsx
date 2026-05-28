@@ -15,6 +15,7 @@ import {
   completeFollowUp,
   getFollowUps,
   rescheduleFollowUp as rescheduleBackendFollowUp,
+  sendWhatsAppMessage,
   useApiClient,
 } from "@/lib/api";
 import { trackAnalyticsEvent, trackScreenStateSeen } from "@/lib/analytics";
@@ -316,7 +317,7 @@ function SuccessBanner({ message }: { message: string }) {
       />
       <View className="min-w-0 flex-1">
         <Text className="text-[15px] font-bold leading-5 text-neo-success">
-          Follow-up saved locally
+          Follow-up updated
         </Text>
         <Text className="mt-1 text-[14px] leading-5 text-neo-text">
           {message}
@@ -1012,6 +1013,33 @@ export function FollowUpsScreen({
     }
 
     if (isBackendRecordId(item.id)) {
+      if (!isBackendRecordId(item.conversationId)) {
+        setNotice({
+          message:
+            "This backend follow-up is missing a live WhatsApp conversation ID, so Neo did not send it.",
+          title: "WhatsApp conversation missing",
+          tone: "warning",
+        });
+        setSuccessMessage(null);
+        return;
+      }
+
+      const sendResult = await sendWhatsAppMessage(
+        apiClient,
+        item.conversationId,
+        draft,
+      );
+
+      if (!sendResult.ok) {
+        setNotice({
+          message: sendResult.error.message,
+          title: "Follow-up could not send",
+          tone: "warning",
+        });
+        setSuccessMessage(null);
+        return;
+      }
+
       const result = await completeFollowUp(apiClient, item.id);
 
       if (!result.ok) {
@@ -1031,7 +1059,7 @@ export function FollowUpsScreen({
       setEditingId(null);
       setNotice(null);
       setSuccessMessage(
-        "Follow-up was marked complete in backend records. No WhatsApp message was sent in B05.",
+        "Follow-up was sent through the WhatsApp backend and marked complete.",
       );
       return;
     }

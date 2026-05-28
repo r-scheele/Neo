@@ -7,6 +7,12 @@ import { StateBanner } from "@/components/feedback/ScreenState";
 import { colors } from "@/constants/colors";
 import { images } from "@/constants/images";
 import { routes } from "@/constants/routes";
+import {
+  getWhatsAppConversations,
+  type BackendWhatsAppConversation,
+  type BackendWhatsAppLabel,
+  useApiClient,
+} from "@/lib/api";
 import { trackAnalyticsEvent, trackScreenStateSeen } from "@/lib/analytics";
 import { Link, Pressable, ScrollView, Text, TextInput, View } from "@/src/tw";
 import { useConnectivityStore } from "@/stores/useConnectivityStore";
@@ -135,6 +141,40 @@ function getLabelTint(tone: StatusTone) {
   }
 
   return colors.text;
+}
+
+function getBackendLabelIcon(label: BackendWhatsAppLabel) {
+  if (label.text === "Unread" || label.tone === "error") {
+    return images.iconWarning;
+  }
+
+  if (label.text.includes("Image") || label.text.includes("Document")) {
+    return images.iconReceiptReview;
+  }
+
+  return images.iconInbox;
+}
+
+function normalizeBackendConversation(
+  conversation: BackendWhatsAppConversation,
+): Conversation {
+  return {
+    assignment: "unassigned",
+    assignmentLabel: conversation.assignmentLabel,
+    avatarTone: conversation.unreadCount > 0 ? "error" : conversation.statusTone,
+    customerInitials: conversation.customerInitials,
+    customerName: conversation.customerName,
+    id: conversation.id,
+    labels: conversation.labels.map((label) => ({
+      icon: getBackendLabelIcon(label),
+      text: label.text,
+      tone: label.tone,
+    })),
+    latestSnippet: conversation.latestSnippet,
+    presenceTone: conversation.presenceTone,
+    timestamp: conversation.timestamp,
+    unreadCount: conversation.unreadCount,
+  };
 }
 
 function SearchMark() {
@@ -279,9 +319,11 @@ function SearchField({
 
 function FilterChips({
   activeFilter,
+  items,
   onSelectFilter,
 }: {
   activeFilter: ConversationFilter;
+  items: readonly Conversation[];
   onSelectFilter: (filter: ConversationFilter) => void;
 }) {
   return (
@@ -323,7 +365,7 @@ function FilterChips({
                 }`}
                 style={{ fontVariant: ["tabular-nums"] }}
               >
-                {getFilterCount(filter.id)}
+                {getFilterCount(filter.id, items)}
               </Text>
             </View>
           </Pressable>
@@ -466,15 +508,17 @@ function ConversationRow({
 function ConversationList({
   conversationsToShow,
   forceEmpty,
+  totalConversations,
   isSearchActive,
   sourceTab,
 }: {
   conversationsToShow: readonly Conversation[];
   forceEmpty: boolean;
+  totalConversations: number;
   isSearchActive: boolean;
   sourceTab: ConversationFilter;
 }) {
-  if (forceEmpty || conversations.length === 0) {
+  if (forceEmpty || totalConversations === 0) {
     return <InboxEmptyState />;
   }
 
@@ -604,6 +648,7 @@ export function InboxConversationListScreen({
 }: {
   initialState?: MockScreenState;
 }) {
+  const apiClient = useApiClient();
   const { height, width } = useWindowDimensions();
   const isCompactPhone = height < 760 || width < 380;
   const horizontalPadding = width >= 390 ? 20 : 16;
@@ -620,19 +665,31 @@ export function InboxConversationListScreen({
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [onlyUnassigned, setOnlyUnassigned] = useState(false);
   const [query, setQuery] = useState("");
-  const [viewState, setViewState] = useState<InboxViewState>(
-    initialState === "loading" || initialState === "error"
-      ? initialState
-      : "ready",
+  const [conversationItems, setConversationItems] = useState<readonly Conversation[]>(
+    initialState === "empty" ? [] : conversations,
   );
+  const [viewState, setViewState] = useState<InboxViewState>(
+    initialState === "ready"
+      ? "loading"
+      : initialState === "loading" || initialState === "error"
+        ? initialState
+        : "ready",
+  );
+  const [reloadVersion, setReloadVersion] = useState(0);
   const isOffline = initialState === "offline" || !isOnline;
   const isPermissionLimited = initialState === "permission";
   const unreadCount =
-    initialState === "empty" ? 0 : getInboxUnreadCount(conversations);
+    initialState === "empty" ? 0 : getInboxUnreadCount(conversationItems);
 
   const visibleConversations = useMemo(
-    () => filterConversations({ filter: activeFilter, onlyUnassigned, query }),
-    [activeFilter, onlyUnassigned, query],
+    () =>
+      filterConversations({
+        filter: activeFilter,
+        items: conversationItems,
+        onlyUnassigned,
+        query,
+      }),
+    [activeFilter, conversationItems, onlyUnassigned, query],
   );
 
   useEffect(() => {
@@ -648,12 +705,38 @@ export function InboxConversationListScreen({
     setInboxUnreadCount(unreadCount);
   }, [setInboxUnreadCount, unreadCount]);
 
+  useEffect(() => {
+    if (initialState !== "ready") {
+      return;
+    }
+
+    let isActive = true;
+
+    getWhatsAppConversations(apiClient).then((result) => {
+      if (!isActive) {
+        return;
+      }
+
+      if (result.ok) {
+        setConversationItems(
+          result.data.conversations.map(normalizeBackendConversation),
+        );
+        setViewState("ready");
+        markSynced();
+        return;
+      }
+
+      setViewState("error");
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [apiClient, initialState, markSynced, reloadVersion]);
+
   function retryInboxLoad() {
     setViewState("loading");
-    setTimeout(() => {
-      setViewState("ready");
-      markSynced();
-    }, 350);
+    setReloadVersion((currentValue) => currentValue + 1);
   }
 
   function toggleSearch() {
@@ -740,7 +823,11 @@ export function InboxConversationListScreen({
           </View>
         ) : null}
 
-        <FilterChips activeFilter={activeFilter} onSelectFilter={setActiveFilter} />
+        <FilterChips
+          activeFilter={activeFilter}
+          items={conversationItems}
+          onSelectFilter={setActiveFilter}
+        />
 
         <View className="mt-3">
           {viewState === "loading" ? <InboxSkeleton /> : null}
@@ -751,6 +838,7 @@ export function InboxConversationListScreen({
               forceEmpty={initialState === "empty"}
               isSearchActive={normalizeSearch(query).length > 0}
               sourceTab={activeFilter}
+              totalConversations={conversationItems.length}
             />
           ) : null}
         </View>

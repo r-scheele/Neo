@@ -2,7 +2,7 @@
 
 Date: 2026-05-28
 
-Status: approved response envelope; B02 client parser exists; B04 auth bootstrap endpoints exist; B05 commerce endpoints are implemented and deployed; B06 permissions/audit handling is implemented for current sensitive commerce endpoints.
+Status: approved response envelope; B02 client parser exists; B04 auth bootstrap endpoints exist; B05 commerce endpoints are implemented and deployed; B06 permissions/audit handling is implemented for current sensitive commerce endpoints; B07 WhatsApp workflow endpoints are implemented.
 
 Base URL env var:
 
@@ -62,8 +62,39 @@ Implemented:
 - `receipts`: receipt review detail/list and human receipt review decision updates.
 - `follow-ups`: follow-up queue/list, complete, and reschedule actions.
 - `approvals`: list safe approval records and record owner/manager approval decisions.
+- `whatsapp-send-message`: authenticated WhatsApp setup status, conversation list/detail, and server-side send actions.
+- `whatsapp-webhook`: public Meta webhook challenge/signature receiver; stores redacted raw webhook events and normalizes inbound/status events.
 
 Other function folders return safe deferred errors until their matching Phase B prompt is implemented.
+
+## B07 WhatsApp Endpoint Contracts
+
+WhatsApp provider credentials live only in Supabase secrets. Client requests must use the normal Clerk bearer-token API client except for Meta's public webhook callback.
+
+Function: `whatsapp-send-message`
+
+- `GET /whatsapp-send-message/status`
+  - Returns safe connection metadata: setup state, can-send/can-receive booleans, last checked time, source label, and last-four identifiers only.
+- `GET /whatsapp-send-message/conversations`
+  - Returns conversation list cards for the active business, with customer display labels, unread counts, safe latest previews, and status labels.
+- `GET /whatsapp-send-message/conversations/:id`
+  - Returns a conversation detail payload and marks the conversation read for the active business.
+- `POST /whatsapp-send-message/conversations/:id/messages`
+  - Body: `{ "body": "string" }`
+  - Requires server permission `whatsapp.send`.
+  - Sends through Meta Graph API with server-owned credentials, stores only a safe body preview, updates conversation metadata, and writes a safe `whatsapp.send_attempted` audit event.
+
+Function: `whatsapp-webhook`
+
+- `GET /whatsapp-webhook`
+  - Verifies Meta callback challenge with `META_WHATSAPP_WEBHOOK_VERIFY_TOKEN`.
+- `POST /whatsapp-webhook`
+  - Verifies `x-hub-signature-256` with `META_APP_SECRET`.
+  - Stores a redacted raw webhook payload.
+  - Creates or updates customer, conversation, and message rows for inbound messages.
+  - Updates outbound message status records from Meta status webhooks.
+
+Webhook payload storage must redact private phone identifiers, profile names, captions, and message bodies. The app must not log provider tokens, webhook secrets, raw message text, phone numbers, receipt images, or customer private content.
 
 ## B06 Permissions And Audit Behavior
 
@@ -385,7 +416,7 @@ Response data:
 }
 ```
 
-`urgentChatsCount` may remain `0` or omitted until B07 WhatsApp workflow integration provides live conversation state. The client must preserve a clearly isolated dev/demo fallback if that field is unavailable.
+`urgentChatsCount` is populated from backend WhatsApp conversations with unread messages after B07. The client must preserve a clearly isolated dev/demo fallback if that field is unavailable.
 
 ## B02 Client Boundary
 

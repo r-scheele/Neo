@@ -56,7 +56,7 @@ These implementation decisions remain before feature-complete backend work:
 
 - Storage bucket creation and policies.
 - Supabase secrets values for `CLERK_SECRET_KEY`, OpenAI, Meta WhatsApp, and PostHog.
-- Feature endpoint implementation for B07-B08. B05 commerce endpoints and B06 permissions/audit handling are implemented for current sensitive commerce endpoints.
+- Feature endpoint implementation for B08 and later media/payment workflows. B05 commerce endpoints, B06 permissions/audit handling, and B07 WhatsApp workflow endpoints are implemented for current MVP flows.
 
 ## Secrets Boundary
 

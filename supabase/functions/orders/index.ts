@@ -360,6 +360,16 @@ async function getTodaySummary(businessId: string): Promise<Response> {
     return followUps.response;
   }
 
+  const urgentChats = await dbRequest(
+    `/rest/v1/whatsapp_conversations?business_id=eq.${encodeURIComponent(businessId)}` +
+      "&unread_count=gt.0&select=id,unread_count,last_message_at&limit=100",
+    { method: "GET" },
+    records,
+  );
+  if (!urgentChats.ok) {
+    return urgentChats.response;
+  }
+
   const unpaidOrders = orders.data.filter((order) => {
     const status = optionalString(order.payment_status);
     return status !== "paid";
@@ -373,6 +383,7 @@ async function getTodaySummary(businessId: string): Promise<Response> {
     0,
   );
   const firstPendingReceiptId = optionalString(receipts.data[0]?.id);
+  const firstUrgentChatId = optionalString(urgentChats.data[0]?.id);
   const firstUnpaidOrderId = optionalString(unpaidOrders[0]?.id);
 
   return ok({
@@ -383,12 +394,14 @@ async function getTodaySummary(businessId: string): Promise<Response> {
       pendingReceiptsCount: receipts.data.length,
       unpaidOrdersAmount,
       unpaidOrdersCount: unpaidOrders.length,
-      urgentChatsCount: 0,
+      urgentChatsCount: urgentChats.data.length,
     },
     queueItems: todayQueueItems({
       dueFollowUpsCount: followUps.data.length,
+      firstUrgentChatId,
       pendingReceiptsAmount,
       pendingReceiptsCount: receipts.data.length,
+      urgentChatsCount: urgentChats.data.length,
       pendingReceiptId: firstPendingReceiptId,
       unpaidOrdersAmount,
       unpaidOrdersCount: unpaidOrders.length,
@@ -859,22 +872,41 @@ function timelineDto(
 
 function todayQueueItems({
   dueFollowUpsCount,
+  firstUrgentChatId,
   pendingReceiptsAmount,
   pendingReceiptsCount,
   pendingReceiptId,
+  urgentChatsCount,
   unpaidOrdersAmount,
   unpaidOrdersCount,
   unpaidOrderId,
 }: {
   dueFollowUpsCount: number;
+  firstUrgentChatId: string | null;
   pendingReceiptsAmount: number;
   pendingReceiptsCount: number;
   pendingReceiptId: string | null;
+  urgentChatsCount: number;
   unpaidOrdersAmount: number;
   unpaidOrdersCount: number;
   unpaidOrderId: string | null;
 }) {
   const items = [];
+
+  if (urgentChatsCount > 0) {
+    items.push({
+      actionLabel: "Open inbox",
+      badgeCount: urgentChatsCount,
+      details: `${urgentChatsCount} unread conversation(s)`,
+      href: firstUrgentChatId ? `/conversation/${firstUrgentChatId}` : "/inbox",
+      id: "urgent-chats",
+      priority: "high",
+      reason: "Customers are waiting for a reply",
+      status: "Unread",
+      statusTone: "error",
+      title: "Urgent chats",
+    });
+  }
 
   if (pendingReceiptsCount > 0) {
     items.push({

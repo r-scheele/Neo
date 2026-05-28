@@ -404,6 +404,12 @@ verify_jwt = false
 [functions.approvals]
 verify_jwt = false
 
+[functions.whatsapp-send-message]
+verify_jwt = false
+
+[functions.whatsapp-webhook]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

@@ -1,7 +1,15 @@
 # B07 WhatsApp Workflow Integration Prompt
 
 Status:
-Deferred until B03-B04 are complete and WhatsApp provider secrets/contracts are approved.
+Complete for MVP backend wiring.
+
+Implementation notes:
+- Meta WhatsApp secrets are configured in Supabase secrets, not in the Expo app.
+- Webhook callback: `https://xtalfjnmxnwtogxgtlxn.supabase.co/functions/v1/whatsapp-webhook`
+- `whatsapp-webhook` verifies Meta challenge/signature and stores redacted webhook payloads before normalizing inbound messages.
+- `whatsapp-send-message` exposes authenticated status, conversation list/detail, and send endpoints.
+- Inbox, Conversation Detail, WhatsApp Setup, Follow-ups, and Today counts now use the backend WhatsApp API path where durable records exist.
+- Media download/storage remains intentionally out of scope for this MVP pass.
 
 Do not run this prompt until:
 - B03 database schema readiness is complete

@@ -9,6 +9,13 @@ import { StateBanner } from "@/components/feedback/ScreenState";
 import { colors } from "@/constants/colors";
 import { images } from "@/constants/images";
 import {
+  getWhatsAppConversation,
+  sendWhatsAppMessage,
+  type BackendWhatsAppConversationDetail,
+  type BackendWhatsAppLabel,
+  useApiClient,
+} from "@/lib/api";
+import {
   getConfidenceBand,
   trackAnalyticsEvent,
   trackScreenStateSeen,
@@ -367,6 +374,69 @@ function getConversationById(id?: string) {
   }
 
   return conversationRecords[id] ?? null;
+}
+
+function backendChipIcon(chip: BackendWhatsAppLabel) {
+  if (chip.text.includes("WhatsApp")) {
+    return images.iconInbox;
+  }
+
+  if (chip.tone === "error") {
+    return images.iconWarning;
+  }
+
+  return images.iconCustomer;
+}
+
+function backendDetailIcon(title: string) {
+  if (title === "Customer") {
+    return images.iconCustomer;
+  }
+
+  if (title === "Guardrail") {
+    return images.iconPermission;
+  }
+
+  return images.iconInbox;
+}
+
+function normalizeBackendConversationDetail(
+  detail: BackendWhatsAppConversationDetail,
+): ConversationRecord {
+  return {
+    aiDraft: null,
+    assignmentLabel: detail.assignmentLabel,
+    chips: detail.chips.map((chip) => ({
+      icon: backendChipIcon(chip),
+      label: chip.text,
+      tone: chip.tone,
+    })),
+    contextItems: detail.contextItems.map((item) => ({
+      detail: item.detail,
+      icon: backendDetailIcon(item.title),
+      meta: item.meta,
+      title: item.title,
+    })),
+    customerId: detail.customerId,
+    customerInitials: detail.customerInitials,
+    customerName: detail.customerName,
+    emptyNote: detail.emptyNote,
+    messages: detail.messages.map((message) => ({
+      body: message.body,
+      id: message.id,
+      kind: message.kind,
+      sender: message.sender,
+      time: message.time,
+    })),
+    statusLabel: detail.statusLabel,
+    subtitle: detail.subtitle,
+    summary: detail.summary.map((item) => ({
+      detail: item.detail,
+      icon: backendDetailIcon(item.title),
+      meta: item.meta,
+      title: item.title,
+    })),
+  };
 }
 
 function HeaderButton({
@@ -1086,15 +1156,21 @@ function Composer({
   composerText,
   customerName,
   disabled,
+  isSending,
   onChangeText,
   onNotice,
+  onSend,
 }: {
   composerText: string;
   customerName: string;
   disabled: boolean;
+  isSending: boolean;
   onChangeText: (value: string) => void;
   onNotice: (message: string) => void;
+  onSend: () => void;
 }) {
+  const sendDisabled = disabled || isSending || composerText.trim().length === 0;
+
   return (
     <View className="mt-4 flex-row items-center gap-2">
       <Pressable
@@ -1124,7 +1200,7 @@ function Composer({
         <TextInput
           accessibilityLabel={`Message ${customerName}`}
           className="min-h-8 text-[16px] leading-6 text-neo-text"
-          editable={!disabled}
+          editable={!disabled && !isSending}
           multiline
           onChangeText={onChangeText}
           placeholder={disabled ? "Messaging disabled while offline" : `Message ${customerName}`}
@@ -1136,12 +1212,12 @@ function Composer({
       <Pressable
         accessibilityLabel="Send manual message"
         accessibilityRole="button"
-        accessibilityState={{ disabled }}
+        accessibilityState={{ disabled: sendDisabled }}
         className={`min-h-12 w-12 items-center justify-center rounded-lg border border-neo-border ${
-          disabled ? "bg-neo-surface-alt" : "bg-neo-surface"
+          sendDisabled ? "bg-neo-surface-alt" : "bg-neo-surface"
         }`}
-        disabled={disabled}
-        onPress={() => onNotice("Manual sending is disabled in this mock screen.")}
+        disabled={sendDisabled}
+        onPress={onSend}
       >
         <Image
           accessibilityIgnoresInvertColors
@@ -1149,7 +1225,7 @@ function Composer({
           source={images.iconInbox}
           style={{
             height: 24,
-            tintColor: disabled ? colors.textMuted : colors.text,
+            tintColor: sendDisabled ? colors.textMuted : colors.text,
             width: 24,
           }}
         />
@@ -1255,21 +1331,31 @@ export function ConversationDetailScreen({
   conversationId?: string;
   initialState?: MockScreenState;
 }) {
+  const apiClient = useApiClient();
   const { height, width } = useWindowDimensions();
   const isCompactPhone = height < 760 || width < 380;
   const horizontalPadding = width >= 390 ? 20 : 16;
-  const conversation = useMemo(() => getConversationById(conversationId), [conversationId]);
-  const initialDraftText = conversation?.aiDraft?.body ?? "";
+  const fixtureConversation = useMemo(
+    () => getConversationById(conversationId),
+    [conversationId],
+  );
+  const [backendConversation, setBackendConversation] =
+    useState<ConversationRecord | null>(null);
+  const activeConversation = backendConversation ?? fixtureConversation;
+  const initialDraftText = activeConversation?.aiDraft?.body ?? "";
   const [composerText, setComposerText] = useState("");
   const [draftText, setDraftText] = useState(initialDraftText);
   const [draftMode, setDraftMode] = useState<DraftReviewMode>("review");
   const [hasEditedDraft, setHasEditedDraft] = useState(false);
   const [isSendingDraft, setIsSendingDraft] = useState(false);
+  const [isSendingManualMessage, setIsSendingManualMessage] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [viewState, setViewState] = useState<ConversationViewState>(
     initialState === "loading" || initialState === "error"
       ? initialState
-      : "ready",
+      : fixtureConversation
+        ? "ready"
+        : "loading",
   );
   const actionsDisabled =
     initialState === "offline" || initialState === "permission";
@@ -1284,6 +1370,35 @@ export function ConversationDetailScreen({
   }, []);
 
   useEffect(() => {
+    if (initialState !== "ready" || !conversationId || fixtureConversation) {
+      return;
+    }
+
+    let isActive = true;
+
+    getWhatsAppConversation(apiClient, conversationId).then((result) => {
+      if (!isActive) {
+        return;
+      }
+
+      if (result.ok) {
+        setBackendConversation(
+          normalizeBackendConversationDetail(result.data.conversation),
+        );
+        setViewState("ready");
+        return;
+      }
+
+      setNotice(result.error.message);
+      setViewState("error");
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [apiClient, conversationId, fixtureConversation, initialState]);
+
+  useEffect(() => {
     trackScreenStateSeen({
       errorCategory: "conversation_load_failed",
       hasCachedData: initialState !== "empty",
@@ -1294,7 +1409,7 @@ export function ConversationDetailScreen({
 
   useEffect(() => {
     if (
-      !conversation?.aiDraft ||
+      !activeConversation?.aiDraft ||
       viewState !== "ready" ||
       initialState === "empty" ||
       initialState === "error" ||
@@ -1304,22 +1419,34 @@ export function ConversationDetailScreen({
     }
 
     trackAnalyticsEvent("ai_draft_reviewed", {
-      confidence_band: getConfidenceBand(conversation.aiDraft.confidence),
+      confidence_band: getConfidenceBand(activeConversation.aiDraft.confidence),
       draft_type: "reply",
     });
-  }, [conversation, initialState, viewState]);
+  }, [activeConversation, initialState, viewState]);
 
-  if (!conversation) {
+  if (!activeConversation && viewState !== "loading" && viewState !== "error") {
     return <MissingConversationState conversationId={conversationId} />;
   }
 
-  const activeConversation = conversation;
-
   function retryLoad() {
-    setViewState("loading");
-    setTimeout(() => {
+    if (!conversationId || fixtureConversation) {
       setViewState("ready");
-    }, 350);
+      return;
+    }
+
+    setViewState("loading");
+    getWhatsAppConversation(apiClient, conversationId).then((result) => {
+      if (result.ok) {
+        setBackendConversation(
+          normalizeBackendConversationDetail(result.data.conversation),
+        );
+        setViewState("ready");
+        return;
+      }
+
+      setNotice(result.error.message);
+      setViewState("error");
+    });
   }
 
   function showNotice(message: string) {
@@ -1327,14 +1454,14 @@ export function ConversationDetailScreen({
   }
 
   function editDraft() {
-    if (activeConversation.aiDraft) {
+    if (activeConversation?.aiDraft) {
       setDraftMode("editing");
       setNotice("Edit this draft locally before reviewing it.");
     }
   }
 
   function cancelDraftEdit() {
-    setDraftText(activeConversation.aiDraft?.body ?? "");
+    setDraftText(activeConversation?.aiDraft?.body ?? "");
     setDraftMode("review");
     setNotice("Draft edits were discarded locally.");
   }
@@ -1348,7 +1475,7 @@ export function ConversationDetailScreen({
     }
 
     setDraftText(trimmedDraft);
-    setHasEditedDraft(trimmedDraft !== (activeConversation.aiDraft?.body ?? ""));
+    setHasEditedDraft(trimmedDraft !== (activeConversation?.aiDraft?.body ?? ""));
     setDraftMode("review");
     setNotice("Draft edits saved locally. Nothing was sent.");
   }
@@ -1393,6 +1520,43 @@ export function ConversationDetailScreen({
     setNotice("AI draft review is active again.");
   }
 
+  async function sendManualMessage() {
+    const trimmedMessage = composerText.trim();
+
+    if (!trimmedMessage) {
+      setNotice("Add a message before sending.");
+      return;
+    }
+
+    if (!conversationId || fixtureConversation) {
+      setNotice("Manual sending is available only for backend WhatsApp conversations.");
+      return;
+    }
+
+    setIsSendingManualMessage(true);
+    const result = await sendWhatsAppMessage(apiClient, conversationId, trimmedMessage);
+    setIsSendingManualMessage(false);
+
+    if (!result.ok) {
+      setNotice(result.error.message);
+      return;
+    }
+
+    setBackendConversation(
+      normalizeBackendConversationDetail(result.data.conversation),
+    );
+    setComposerText("");
+    setNotice("Message sent through the WhatsApp backend.");
+  }
+
+  if (!activeConversation) {
+    return (
+      <View className="flex-1 bg-neo-background px-5 py-16">
+        <ConversationSkeleton />
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -1414,11 +1578,11 @@ export function ConversationDetailScreen({
           {viewState === "error" ? <ConversationErrorState onRetry={retryLoad} /> : null}
           {viewState === "ready" ? (
             <>
-              <ConversationHeader conversation={conversation} />
-              <CustomerSummary summary={conversation.summary} />
+              <ConversationHeader conversation={activeConversation} />
+              <CustomerSummary summary={activeConversation.summary} />
               <ConversationChips
-                assignmentLabel={conversation.assignmentLabel}
-                chips={conversation.chips}
+                assignmentLabel={activeConversation.assignmentLabel}
+                chips={activeConversation.chips}
               />
 
               {initialState === "offline" ? (
@@ -1436,25 +1600,25 @@ export function ConversationDetailScreen({
                 />
               ) : null}
 
-              {initialState !== "empty" && conversation.messages.length > 0 ? (
+              {initialState !== "empty" && activeConversation.messages.length > 0 ? (
                 <>
                   <DatePill />
                   <View>
-                    {conversation.messages.map((message) => (
+                    {activeConversation.messages.map((message) => (
                       <ChatMessage key={message.id} message={message} />
                     ))}
                   </View>
                 </>
               ) : (
-                <ConversationEmptyState conversation={conversation} />
+                <ConversationEmptyState conversation={activeConversation} />
               )}
 
-              <ContextStrip items={conversation.contextItems} />
+              <ContextStrip items={activeConversation.contextItems} />
 
-              {conversation.aiDraft ? (
+              {activeConversation.aiDraft ? (
                 <>
                   <AiDraftCard
-                    draft={conversation.aiDraft}
+                    draft={activeConversation.aiDraft}
                     draftText={draftText}
                     mode={draftMode}
                     onCancelEdit={cancelDraftEdit}
@@ -1467,7 +1631,7 @@ export function ConversationDetailScreen({
                   <DraftActions
                     actionsDisabled={actionsDisabled}
                     conversationId={conversationId}
-                    customerName={conversation.customerName}
+                    customerName={activeConversation.customerName}
                     isSendingDraft={isSendingDraft}
                     mode={draftMode}
                     onEdit={editDraft}
@@ -1488,10 +1652,12 @@ export function ConversationDetailScreen({
 
               <Composer
                 composerText={composerText}
-                customerName={conversation.customerName}
+                customerName={activeConversation.customerName}
                 disabled={actionsDisabled}
+                isSending={isSendingManualMessage}
                 onChangeText={setComposerText}
                 onNotice={showNotice}
+                onSend={sendManualMessage}
               />
             </>
           ) : null}
