@@ -5,7 +5,9 @@ import { useRouter } from "expo-router";
 
 import { images } from "@/constants/images";
 import { routes } from "@/constants/routes";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 import { Link, Pressable, ScrollView, Text, View } from "@/src/tw";
+import { useSetupStore } from "@/stores/useSetupStore";
 
 type ConnectionStatus = "connected" | "disconnected" | "checking";
 type TestStatus = "not-tested" | "tested" | "failed";
@@ -209,6 +211,7 @@ export function WhatsAppSetupScreen() {
   const [testStatus, setTestStatus] = useState<TestStatus>("not-tested");
   const [isActionPending, setIsActionPending] = useState(false);
   const actionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const markStepComplete = useSetupStore((store) => store.markStepComplete);
 
   useEffect(() => {
     return () => {
@@ -263,6 +266,10 @@ export function WhatsAppSetupScreen() {
   };
 
   const handleContinue = () => {
+    markStepComplete("whatsapp-status");
+    trackAnalyticsEvent("setup_step_completed", {
+      step_id: "whatsapp-status",
+    });
     router.push(routes.setup);
   };
 

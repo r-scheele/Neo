@@ -6,10 +6,14 @@ import { useRouter } from "expo-router";
 import { colors } from "@/constants/colors";
 import { images } from "@/constants/images";
 import { routes } from "@/constants/routes";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 import { Link, Pressable, ScrollView, Text, View } from "@/src/tw";
-
-type PaymentMethodId = "bank-transfer" | "payment-link" | "pay-on-delivery";
-type ReceiptCheckId = "bank-alert" | "amount-match" | "payer-name";
+import {
+  type PaymentMethodId,
+  type PaymentRulesSettings,
+  type ReceiptCheckId,
+  useSetupStore,
+} from "@/stores/useSetupStore";
 
 type PaymentMethod = {
   id: PaymentMethodId;
@@ -31,14 +35,6 @@ type ConfirmationRole = {
   icon: ImageSourcePropType;
   status: string;
   tone: "success" | "muted";
-};
-
-type PaymentRulesState = {
-  activeMethods: Record<PaymentMethodId, boolean>;
-  manualReceiptReview: boolean;
-  requiredChecks: Record<ReceiptCheckId, boolean>;
-  managersCanConfirm: boolean;
-  showDeliveryMethod: boolean;
 };
 
 const paymentMethods: readonly PaymentMethod[] = [
@@ -82,22 +78,6 @@ const receiptChecks: readonly ReceiptCheck[] = [
     icon: images.iconCustomer,
   },
 ];
-
-const defaultPaymentRules: PaymentRulesState = {
-  activeMethods: {
-    "bank-transfer": true,
-    "payment-link": true,
-    "pay-on-delivery": false,
-  },
-  manualReceiptReview: true,
-  requiredChecks: {
-    "bank-alert": true,
-    "amount-match": true,
-    "payer-name": true,
-  },
-  managersCanConfirm: true,
-  showDeliveryMethod: false,
-};
 
 function getStatusToneClassName(tone: "success" | "muted") {
   if (tone === "success") {
@@ -310,17 +290,22 @@ export function PaymentReceiptRulesScreen() {
   const { height, width } = useWindowDimensions();
   const isCompactPhone = height < 760 || width < 380;
   const horizontalPadding = width >= 390 ? 20 : 16;
-  const [rules, setRules] = useState<PaymentRulesState>(defaultPaymentRules);
+  const savedRules = useSetupStore((store) => store.paymentRulesSettings);
+  const setPaymentRulesSettings = useSetupStore(
+    (store) => store.setPaymentRulesSettings,
+  );
+  const markStepComplete = useSetupStore((store) => store.markStepComplete);
+  const [draftRules, setDraftRules] = useState<PaymentRulesSettings>(savedRules);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const visiblePaymentMethods = useMemo(
     () =>
-      rules.showDeliveryMethod
+      draftRules.showDeliveryMethod
         ? paymentMethods
         : paymentMethods.filter((method) => method.id !== "pay-on-delivery"),
-    [rules.showDeliveryMethod],
+    [draftRules.showDeliveryMethod],
   );
 
   const confirmationRoles = useMemo<readonly ConfirmationRole[]>(
@@ -334,12 +319,12 @@ export function PaymentReceiptRulesScreen() {
       },
       {
         title: "Managers",
-        description: rules.managersCanConfirm
+        description: draftRules.managersCanConfirm
           ? "Can confirm after owner/manager review"
           : "Need owner approval before confirming",
         icon: images.iconApprovals,
-        status: rules.managersCanConfirm ? "Allowed" : "Review only",
-        tone: rules.managersCanConfirm ? "success" : "muted",
+        status: draftRules.managersCanConfirm ? "Allowed" : "Review only",
+        tone: draftRules.managersCanConfirm ? "success" : "muted",
       },
       {
         title: "Staff",
@@ -349,16 +334,17 @@ export function PaymentReceiptRulesScreen() {
         tone: "muted",
       },
     ],
-    [rules.managersCanConfirm],
+    [draftRules.managersCanConfirm],
   );
 
-  const updateRules = (nextRules: Partial<PaymentRulesState>) => {
-    setRules((currentRules) => ({ ...currentRules, ...nextRules }));
+  const updateRules = (nextRules: Partial<PaymentRulesSettings>) => {
+    setDraftRules((currentRules) => ({ ...currentRules, ...nextRules }));
     setError(null);
+    setNotice(null);
   };
 
   const togglePaymentMethod = (methodId: PaymentMethodId) => {
-    setRules((currentRules) => ({
+    setDraftRules((currentRules) => ({
       ...currentRules,
       activeMethods: {
         ...currentRules.activeMethods,
@@ -370,7 +356,7 @@ export function PaymentReceiptRulesScreen() {
   };
 
   const toggleRequiredCheck = (checkId: ReceiptCheckId) => {
-    setRules((currentRules) => ({
+    setDraftRules((currentRules) => ({
       ...currentRules,
       requiredChecks: {
         ...currentRules.requiredChecks,
@@ -378,15 +364,16 @@ export function PaymentReceiptRulesScreen() {
       },
     }));
     setError(null);
+    setNotice(null);
   };
 
   const handleAddMethod = () => {
-    if (rules.showDeliveryMethod) {
+    if (draftRules.showDeliveryMethod) {
       setNotice("Pay on delivery is already available as a local setup option.");
       return;
     }
 
-    setRules((currentRules) => ({
+    setDraftRules((currentRules) => ({
       ...currentRules,
       showDeliveryMethod: true,
       activeMethods: {
@@ -400,7 +387,7 @@ export function PaymentReceiptRulesScreen() {
 
   const handleSave = () => {
     const activeMethodCount = visiblePaymentMethods.filter(
-      (method) => rules.activeMethods[method.id],
+      (method) => draftRules.activeMethods[method.id],
     ).length;
 
     if (activeMethodCount === 0) {
@@ -408,13 +395,13 @@ export function PaymentReceiptRulesScreen() {
       return;
     }
 
-    if (!rules.manualReceiptReview) {
+    if (!draftRules.manualReceiptReview) {
       setError("Manual receipt review must stay on for transfer receipts.");
       return;
     }
 
     const hasRequiredCheckOff = receiptChecks.some(
-      (check) => !rules.requiredChecks[check.id],
+      (check) => !draftRules.requiredChecks[check.id],
     );
 
     if (hasRequiredCheckOff) {
@@ -423,6 +410,11 @@ export function PaymentReceiptRulesScreen() {
     }
 
     setIsSubmitting(true);
+    setPaymentRulesSettings(draftRules);
+    markStepComplete("payment-rules");
+    trackAnalyticsEvent("setup_step_completed", {
+      step_id: "payment-rules",
+    });
     router.push(routes.setup);
   };
 
@@ -439,18 +431,22 @@ export function PaymentReceiptRulesScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View className="w-full max-w-[430px]">
-        <View className="flex-row items-start gap-3">
-          <Link asChild href={routes.setup}>
-            <Pressable
-              accessibilityLabel="Back to setup checklist"
-              accessibilityRole="link"
-              className="min-h-11 w-11 items-start justify-center"
-            >
-              <Text className="text-[34px] leading-9 text-neo-primary">{"<"}</Text>
-            </Pressable>
-          </Link>
+        <View>
+          <View className="flex-row items-center justify-between gap-3">
+            <Link asChild href={routes.setup}>
+              <Pressable
+                accessibilityLabel="Back to setup checklist"
+                accessibilityRole="link"
+                className="min-h-11 w-11 items-start justify-center"
+              >
+                <Text className="text-[34px] leading-9 text-neo-primary">{"<"}</Text>
+              </Pressable>
+            </Link>
 
-          <View className="flex-1 items-center">
+            <ProgressChip />
+          </View>
+
+          <View className="mt-5 items-center px-2">
             <Text className="text-center text-[26px] font-bold leading-8 text-neo-text">
               Payment rules
             </Text>
@@ -458,8 +454,6 @@ export function PaymentReceiptRulesScreen() {
               Set how customers pay and how receipts are reviewed safely.
             </Text>
           </View>
-
-          <ProgressChip />
         </View>
 
         <View className="mt-7 gap-4">
@@ -471,7 +465,7 @@ export function PaymentReceiptRulesScreen() {
             <View className="overflow-hidden rounded-lg border border-neo-border bg-neo-surface">
               {visiblePaymentMethods.map((method) => (
                 <PaymentMethodRow
-                  isActive={rules.activeMethods[method.id]}
+                  isActive={draftRules.activeMethods[method.id]}
                   key={method.id}
                   method={method}
                   onToggle={() => togglePaymentMethod(method.id)}
@@ -506,7 +500,7 @@ export function PaymentReceiptRulesScreen() {
                 }
                 thumbColor={colors.surface}
                 trackColor={{ false: colors.border, true: colors.primary }}
-                value={rules.manualReceiptReview}
+                value={draftRules.manualReceiptReview}
               />
             }
           >
@@ -546,7 +540,7 @@ export function PaymentReceiptRulesScreen() {
               {receiptChecks.map((check) => (
                 <ReceiptCheckRow
                   check={check}
-                  isEnabled={rules.requiredChecks[check.id]}
+                  isEnabled={draftRules.requiredChecks[check.id]}
                   key={check.id}
                   onToggle={() => toggleRequiredCheck(check.id)}
                 />
@@ -582,7 +576,7 @@ export function PaymentReceiptRulesScreen() {
                 }
                 thumbColor={colors.surface}
                 trackColor={{ false: colors.border, true: colors.primary }}
-                value={rules.managersCanConfirm}
+                value={draftRules.managersCanConfirm}
               />
             </View>
 

@@ -6,6 +6,12 @@ import type { Href } from "expo-router";
 import { images } from "@/constants/images";
 import { routes } from "@/constants/routes";
 import { Link, Pressable, ScrollView, Text, View } from "@/src/tw";
+import {
+  getCompletedSetupStepCount,
+  getNextSetupStepId,
+  type SetupStepId,
+  useSetupStore,
+} from "@/stores/useSetupStore";
 
 type SetupChecklistViewState = "loading" | "ready" | "empty" | "error";
 type SetupTaskStatus = "done" | "current" | "todo";
@@ -19,12 +25,15 @@ type SetupTask = {
   route?: string;
 };
 
-const setupTasks: readonly SetupTask[] = [
+type SetupTaskDefinition = Omit<SetupTask, "status"> & {
+  id: SetupStepId;
+};
+
+const setupTaskDefinitions: readonly SetupTaskDefinition[] = [
   {
     id: "business-profile",
     title: "Business profile",
     description: "Name, category, location, phone",
-    status: "done",
     icon: images.iconSettings,
     route: routes.businessProfile,
   },
@@ -32,7 +41,6 @@ const setupTasks: readonly SetupTask[] = [
     id: "business-type",
     title: "Business type",
     description: "Category and key offerings",
-    status: "done",
     icon: images.iconProduct,
     route: routes.businessType,
   },
@@ -40,7 +48,6 @@ const setupTasks: readonly SetupTask[] = [
     id: "whatsapp-status",
     title: "WhatsApp status",
     description: "Connect and verify your number",
-    status: "done",
     icon: images.iconInbox,
     route: routes.whatsappSetup,
   },
@@ -48,7 +55,6 @@ const setupTasks: readonly SetupTask[] = [
     id: "ai-personality",
     title: "AI personality & tone",
     description: "Set how Neo should talk for you",
-    status: "done",
     icon: images.iconAiDraft,
     route: routes.aiPersonality,
   },
@@ -56,7 +62,6 @@ const setupTasks: readonly SetupTask[] = [
     id: "payment-rules",
     title: "Payment rules",
     description: "Methods and receipt review rules",
-    status: "done",
     icon: images.iconReceiptReview,
     route: routes.paymentRules,
   },
@@ -64,7 +69,6 @@ const setupTasks: readonly SetupTask[] = [
     id: "delivery-zones",
     title: "Delivery zones",
     description: "Areas and delivery settings",
-    status: "done",
     icon: images.iconDelivery,
     route: routes.deliveryZones,
   },
@@ -72,15 +76,12 @@ const setupTasks: readonly SetupTask[] = [
     id: "product-basics",
     title: "Product basics",
     description: "Add key products and prices",
-    status: "current",
     icon: images.iconProduct,
     route: routes.productBasics,
   },
 ];
 
-const completedTaskCount = setupTasks.filter((task) => task.status === "done").length;
-const totalTaskCount = setupTasks.length;
-const nextTask = setupTasks.find((task) => task.id === "product-basics") ?? setupTasks[0];
+const totalTaskCount = setupTaskDefinitions.length;
 
 function getStatusLabel(status: SetupTaskStatus) {
   if (status === "done") {
@@ -104,6 +105,38 @@ function getStatusClassName(status: SetupTaskStatus) {
   }
 
   return "border-neo-border bg-neo-surface text-neo-text-muted";
+}
+
+function getProgressWidthClassName(completedCount: number) {
+  if (completedCount <= 0) {
+    return "w-0";
+  }
+
+  if (completedCount === 1) {
+    return "w-[14%]";
+  }
+
+  if (completedCount === 2) {
+    return "w-[29%]";
+  }
+
+  if (completedCount === 3) {
+    return "w-[43%]";
+  }
+
+  if (completedCount === 4) {
+    return "w-[57%]";
+  }
+
+  if (completedCount === 5) {
+    return "w-[71%]";
+  }
+
+  if (completedCount === 6) {
+    return "w-[86%]";
+  }
+
+  return "w-full";
 }
 
 function SetupSkeleton() {
@@ -222,7 +255,23 @@ export function SetupChecklistScreen() {
   const isCompactPhone = height < 760 || width < 380;
   const horizontalPadding = width >= 390 ? 20 : 16;
   const [viewState, setViewState] = useState<SetupChecklistViewState>("ready");
-  const nextTaskRoute = nextTask.route;
+  const completedStepIds = useSetupStore((store) => store.completedStepIds);
+  const completedTaskCount = getCompletedSetupStepCount(completedStepIds);
+  const nextStepId = getNextSetupStepId(completedStepIds);
+  const setupTasks = setupTaskDefinitions.map<SetupTask>((task) => ({
+    ...task,
+    status: completedStepIds.includes(task.id)
+      ? "done"
+      : task.id === nextStepId
+        ? "current"
+        : "todo",
+  }));
+  const nextTask =
+    setupTasks.find((task) => task.id === nextStepId) ??
+    setupTasks[setupTasks.length - 1];
+  const hasRemainingSetup = nextStepId !== null;
+  const nextTaskRoute = hasRemainingSetup ? nextTask.route : routes.setup;
+  const progressWidthClassName = getProgressWidthClassName(completedTaskCount);
 
   return (
     <ScrollView
@@ -311,7 +360,9 @@ export function SetupChecklistScreen() {
                       </Text>
                     </View>
                     <View className="mt-4 h-2 overflow-hidden rounded-full bg-neo-border">
-                      <View className="h-2 w-[86%] rounded-full bg-neo-primary" />
+                      <View
+                        className={`h-2 rounded-full bg-neo-primary ${progressWidthClassName}`}
+                      />
                     </View>
                     <Text className="mt-4 text-[14px] leading-5 text-neo-text-muted">
                       Almost there. Complete the next steps to unlock safer AI
@@ -333,7 +384,11 @@ export function SetupChecklistScreen() {
               <Link asChild href={(nextTaskRoute ?? routes.setup) as Href}>
                 <Pressable
                   accessibilityHint="Opens the next setup task."
-                  accessibilityLabel="Next step, Payment rules, needs attention"
+                  accessibilityLabel={
+                    hasRemainingSetup
+                      ? `Next step, ${nextTask.title}, needs attention`
+                      : "Setup complete"
+                  }
                   accessibilityRole="link"
                   className="mt-5 min-h-24 flex-row items-center gap-4 rounded-lg border border-neo-warning bg-neo-surface px-4 py-4"
                 >
@@ -347,19 +402,21 @@ export function SetupChecklistScreen() {
                   </View>
                   <View className="flex-1">
                     <Text className="text-[12px] font-bold uppercase leading-4 text-neo-warning">
-                      Your next step
+                      {hasRemainingSetup ? "Your next step" : "Setup complete"}
                     </Text>
                     <Text className="mt-1 text-[20px] font-bold leading-7 text-neo-text">
                       {nextTask.title}
                     </Text>
                     <Text className="mt-1 text-[14px] leading-5 text-neo-text-muted">
-                      Add starter products so Neo can answer prices accurately.
+                      {hasRemainingSetup
+                        ? "Add starter products so Neo can answer prices accurately."
+                        : "All local setup steps are complete for this prototype."}
                     </Text>
                   </View>
                   <View className="items-end gap-2">
                     <View className="rounded-full border border-neo-warning px-3 py-1">
                       <Text className="text-[13px] font-bold leading-4 text-neo-warning">
-                        Needs attention
+                        {hasRemainingSetup ? "Needs attention" : "Done"}
                       </Text>
                     </View>
                     <Text className="text-[28px] leading-8 text-neo-text-muted">{">"}</Text>

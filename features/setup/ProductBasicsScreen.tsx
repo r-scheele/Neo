@@ -6,7 +6,9 @@ import { useRouter } from "expo-router";
 import { colors } from "@/constants/colors";
 import { images } from "@/constants/images";
 import { routes } from "@/constants/routes";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 import { Link, Pressable, ScrollView, Text, TextInput, View } from "@/src/tw";
+import { useSetupStore } from "@/stores/useSetupStore";
 
 type Product = {
   id: string;
@@ -277,6 +279,9 @@ export function ProductBasicsScreen() {
   const { height, width } = useWindowDimensions();
   const isCompactPhone = height < 760 || width < 380;
   const horizontalPadding = width >= 390 ? 20 : 16;
+  const businessType = useSetupStore((store) => store.businessType);
+  const setProductCount = useSetupStore((store) => store.setProductCount);
+  const markStepComplete = useSetupStore((store) => store.markStepComplete);
   const [products, setProducts] = useState<readonly Product[]>(initialProducts);
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [errors, setErrors] = useState<ProductFormErrors>({});
@@ -375,6 +380,16 @@ export function ProductBasicsScreen() {
 
   const handleSave = () => {
     setIsSubmitting(true);
+    setProductCount(products.length);
+    markStepComplete("product-basics");
+    trackAnalyticsEvent("setup_step_completed", {
+      business_type: businessType ?? undefined,
+      step_id: "product-basics",
+    });
+    trackAnalyticsEvent("onboarding_completed", {
+      business_type: businessType ?? undefined,
+      step_count: 7,
+    });
     router.push(routes.setup);
   };
 
@@ -392,18 +407,22 @@ export function ProductBasicsScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View className="w-full max-w-[430px]">
-        <View className="flex-row items-start gap-3">
-          <Link asChild href={routes.setup}>
-            <Pressable
-              accessibilityLabel="Back to setup checklist"
-              accessibilityRole="link"
-              className="min-h-11 w-11 items-start justify-center"
-            >
-              <Text className="text-[34px] leading-9 text-neo-primary">{"<"}</Text>
-            </Pressable>
-          </Link>
+        <View>
+          <View className="flex-row items-center justify-between gap-3">
+            <Link asChild href={routes.setup}>
+              <Pressable
+                accessibilityLabel="Back to setup checklist"
+                accessibilityRole="link"
+                className="min-h-11 w-11 items-start justify-center"
+              >
+                <Text className="text-[34px] leading-9 text-neo-primary">{"<"}</Text>
+              </Pressable>
+            </Link>
 
-          <View className="flex-1 items-center">
+            <StepChip />
+          </View>
+
+          <View className="mt-5 items-center px-2">
             <Text className="text-center text-[26px] font-bold leading-8 text-neo-text">
               Product basics
             </Text>
@@ -412,8 +431,6 @@ export function ProductBasicsScreen() {
               accurately.
             </Text>
           </View>
-
-          <StepChip />
         </View>
 
         <View className="mt-7 rounded-lg border border-neo-border bg-neo-surface px-4 py-5">

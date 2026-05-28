@@ -6,12 +6,16 @@ import { useRouter } from "expo-router";
 import { colors } from "@/constants/colors";
 import { images } from "@/constants/images";
 import { routes } from "@/constants/routes";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 import { Link, Pressable, ScrollView, Text, View } from "@/src/tw";
-
-type ReplyTone = "warm" | "professional" | "direct" | "friendly";
-type ReplyLength = "short" | "balanced" | "detailed";
-type CustomerAddress = "ma-sir" | "first-name";
-type GuardrailId = "receipts" | "refunds" | "discounts" | "complaints";
+import {
+  defaultAiPersonalitySettings,
+  type AiPersonalitySettings,
+  type GuardrailId,
+  type ReplyLength,
+  type ReplyTone,
+  useSetupStore,
+} from "@/stores/useSetupStore";
 
 type ToneOption = {
   id: ReplyTone;
@@ -31,14 +35,6 @@ type Guardrail = {
   description: string;
   icon: ImageSourcePropType;
   required?: boolean;
-};
-
-type AiPersonalitySettings = {
-  tone: ReplyTone;
-  useNigerianEnglish: boolean;
-  customerAddress: CustomerAddress;
-  replyLength: ReplyLength;
-  approvalGuardrails: Record<GuardrailId, boolean>;
 };
 
 const toneOptions: readonly ToneOption[] = [
@@ -82,19 +78,6 @@ const approvalGuardrails: readonly Guardrail[] = [
     icon: images.iconCustomer,
   },
 ];
-
-const defaultSettings: AiPersonalitySettings = {
-  tone: "warm",
-  useNigerianEnglish: true,
-  customerAddress: "ma-sir",
-  replyLength: "balanced",
-  approvalGuardrails: {
-    receipts: true,
-    refunds: true,
-    discounts: true,
-    complaints: true,
-  },
-};
 
 function getPreviewReply(settings: AiPersonalitySettings) {
   const greeting =
@@ -327,32 +310,39 @@ export function AiPersonalityScreen() {
   const { height, width } = useWindowDimensions();
   const isCompactPhone = height < 760 || width < 380;
   const horizontalPadding = width >= 390 ? 20 : 16;
-  const [settings, setSettings] = useState<AiPersonalitySettings>(defaultSettings);
+  const savedSettings = useSetupStore((store) => store.aiPersonalitySettings);
+  const setAiPersonalitySettings = useSetupStore(
+    (store) => store.setAiPersonalitySettings,
+  );
+  const markStepComplete = useSetupStore((store) => store.markStepComplete);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const previewReply = useMemo(() => getPreviewReply(settings), [settings]);
+  const previewReply = useMemo(
+    () => getPreviewReply(savedSettings),
+    [savedSettings],
+  );
 
   const updateSettings = (nextSettings: Partial<AiPersonalitySettings>) => {
-    setSettings((currentSettings) => ({ ...currentSettings, ...nextSettings }));
+    setAiPersonalitySettings({ ...savedSettings, ...nextSettings });
     setError(null);
   };
 
   const toggleGuardrail = (guardrailId: GuardrailId) => {
-    setSettings((currentSettings) => ({
-      ...currentSettings,
+    setAiPersonalitySettings({
+      ...savedSettings,
       approvalGuardrails: {
-        ...currentSettings.approvalGuardrails,
-        [guardrailId]: !currentSettings.approvalGuardrails[guardrailId],
+        ...savedSettings.approvalGuardrails,
+        [guardrailId]: !savedSettings.approvalGuardrails[guardrailId],
       },
-    }));
+    });
     setError(null);
   };
 
   const handleSave = () => {
     const hasRequiredGuardrailOff = approvalGuardrails.some(
       (guardrail) =>
-        guardrail.required && !settings.approvalGuardrails[guardrail.id],
+        guardrail.required && !savedSettings.approvalGuardrails[guardrail.id],
     );
 
     if (hasRequiredGuardrailOff) {
@@ -361,11 +351,15 @@ export function AiPersonalityScreen() {
     }
 
     setIsSubmitting(true);
+    markStepComplete("ai-personality");
+    trackAnalyticsEvent("setup_step_completed", {
+      step_id: "ai-personality",
+    });
     router.push(routes.setup);
   };
 
   const handleReset = () => {
-    setSettings(defaultSettings);
+    setAiPersonalitySettings(defaultAiPersonalitySettings);
     setError(null);
   };
 
@@ -382,29 +376,31 @@ export function AiPersonalityScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View className="w-full max-w-[430px]">
-        <View className="flex-row items-start gap-3">
-          <Link asChild href={routes.setup}>
-            <Pressable
-              accessibilityLabel="Back to setup checklist"
-              accessibilityRole="link"
-              className="min-h-11 w-11 items-start justify-center"
-            >
-              <Text className="text-[34px] leading-9 text-neo-primary">{"<"}</Text>
-            </Pressable>
-          </Link>
+        <View>
+          <View className="flex-row items-center justify-between gap-3">
+            <Link asChild href={routes.setup}>
+              <Pressable
+                accessibilityLabel="Back to setup checklist"
+                accessibilityRole="link"
+                className="min-h-11 w-11 items-start justify-center"
+              >
+                <Text className="text-[34px] leading-9 text-neo-primary">{"<"}</Text>
+              </Pressable>
+            </Link>
 
-          <View className="flex-1">
-            <Text className="text-[30px] font-bold leading-9 text-neo-text">
-              AI personality
-            </Text>
-            <Text className="mt-1 text-[16px] leading-6 text-neo-text-muted">
-              {"Match Neo's replies to your brand voice."}
-            </Text>
+            <View className="min-h-9 items-center justify-center rounded-full border border-neo-border bg-neo-surface-alt px-4">
+              <Text className="text-[15px] font-bold leading-5 text-neo-text">
+                Step 4 of 7
+              </Text>
+            </View>
           </View>
 
-          <View className="min-h-9 items-center justify-center rounded-full border border-neo-border bg-neo-surface-alt px-4">
-            <Text className="text-[15px] font-bold leading-5 text-neo-text">
-              Step 4 of 7
+          <View className="mt-5 items-center px-2">
+            <Text className="text-center text-[30px] font-bold leading-9 text-neo-text">
+              AI personality
+            </Text>
+            <Text className="mt-1 text-center text-[16px] leading-6 text-neo-text-muted">
+              {"Match Neo's replies to your brand voice."}
             </Text>
           </View>
         </View>
@@ -418,7 +414,7 @@ export function AiPersonalityScreen() {
             <View className="flex-row flex-wrap gap-3">
               {toneOptions.map((option) => (
                 <ToneButton
-                  isSelected={settings.tone === option.id}
+                  isSelected={savedSettings.tone === option.id}
                   key={option.id}
                   onPress={() => updateSettings({ tone: option.id })}
                   option={option}
@@ -445,7 +441,7 @@ export function AiPersonalityScreen() {
                   }
                   thumbColor={colors.surface}
                   trackColor={{ false: colors.border, true: colors.primary }}
-                  value={settings.useNigerianEnglish}
+                  value={savedSettings.useNigerianEnglish}
                 />
               </View>
 
@@ -455,12 +451,12 @@ export function AiPersonalityScreen() {
                 </Text>
                 <View className="flex-1 flex-row gap-2">
                   <SegmentedOption
-                    isSelected={settings.customerAddress === "ma-sir"}
+                    isSelected={savedSettings.customerAddress === "ma-sir"}
                     label="Ma / Sir"
                     onPress={() => updateSettings({ customerAddress: "ma-sir" })}
                   />
                   <SegmentedOption
-                    isSelected={settings.customerAddress === "first-name"}
+                    isSelected={savedSettings.customerAddress === "first-name"}
                     label="First name"
                     onPress={() =>
                       updateSettings({ customerAddress: "first-name" })
@@ -479,7 +475,7 @@ export function AiPersonalityScreen() {
             <View className="flex-row gap-3">
               {replyLengthOptions.map((option) => (
                 <ReplyLengthButton
-                  isSelected={settings.replyLength === option.id}
+                  isSelected={savedSettings.replyLength === option.id}
                   key={option.id}
                   onPress={() => updateSettings({ replyLength: option.id })}
                   option={option}
@@ -508,7 +504,7 @@ export function AiPersonalityScreen() {
               {approvalGuardrails.map((guardrail) => (
                 <GuardrailRow
                   guardrail={guardrail}
-                  isEnabled={settings.approvalGuardrails[guardrail.id]}
+                  isEnabled={savedSettings.approvalGuardrails[guardrail.id]}
                   key={guardrail.id}
                   onToggle={() => toggleGuardrail(guardrail.id)}
                 />
