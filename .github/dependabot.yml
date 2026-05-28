@@ -1,0 +1,42 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Africa/Lagos
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: deps
+      include: scope
+    groups:
+      expo-react-native:
+        patterns:
+          - expo
+          - expo-*
+          - react
+          - react-dom
+          - react-native
+          - react-native-*
+      tooling:
+        patterns:
+          - "@tailwindcss/*"
+          - "@types/*"
+          - eslint
+          - eslint-*
+          - tailwindcss
+          - typescript
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:30"
+      timezone: Africa/Lagos
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: deps
+      include: scope
