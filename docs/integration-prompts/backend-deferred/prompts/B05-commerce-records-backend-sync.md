@@ -1,13 +1,13 @@
 # B05 Commerce Records Backend Sync Prompt
 
 Status:
-Deferred until B03 database readiness and B04 server auth/profile bootstrap are complete.
+Ready. B03 and B04 are complete, the remote schema is pushed, and the commerce endpoint contracts are approved.
 
 Do not run this prompt until:
 - B03 database schema readiness is complete
 - B04 server auth/profile bootstrap is complete
 - durable records schema is reviewed and pushed, or this prompt explicitly scopes a local-only backend implementation pass
-- orders/customers/receipts/follow-ups endpoint contracts are approved
+- orders/customers/receipts/follow-ups/Today endpoint contracts are approved
 
 ## When to run this prompt
 

@@ -23,8 +23,6 @@ Supabase is selected for Neo's backend provider.
 
 ## Still Deferred
 
-- Typed mobile API client in `lib/api/`.
-- Clerk token verification inside Edge Functions.
 - WhatsApp Cloud API integration.
 - AI provider calls.
 - Commerce record sync from fixture data.

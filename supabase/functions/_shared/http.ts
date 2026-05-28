@@ -1,5 +1,15 @@
 type ErrorDetails = Record<string, unknown>;
 
+export type JsonRecordResult =
+  | {
+      ok: true;
+      data: Record<string, unknown>;
+    }
+  | {
+      ok: false;
+      response: Response;
+    };
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -21,7 +31,7 @@ export function ok(data: Record<string, unknown>, status = 200): Response {
   return json({ data, error: null }, status);
 }
 
-export function failure(
+export function fail(
   code: string,
   message: string,
   status = 400,
@@ -40,8 +50,10 @@ export function failure(
   );
 }
 
+export const failure = fail;
+
 export function deferred(functionName: string): Response {
-  return failure(
+  return fail(
     "ENDPOINT_DEFERRED",
     "This backend endpoint is scaffolded but not implemented yet.",
     501,
@@ -53,12 +65,49 @@ export function deferred(functionName: string): Response {
 }
 
 export function methodNotAllowed(allowedMethods: string[]): Response {
-  return failure(
+  return fail(
     "METHOD_NOT_ALLOWED",
     "This request method is not supported for this endpoint.",
     405,
     { allowedMethods },
   );
+}
+
+export async function readJsonRecord(request: Request): Promise<JsonRecordResult> {
+  let body: unknown;
+
+  try {
+    body = (await request.json()) as unknown;
+  } catch {
+    return {
+      ok: false,
+      response: fail(
+        "VALIDATION_INVALID_JSON",
+        "Send a valid JSON request body.",
+        400,
+      ),
+    };
+  }
+
+  if (!isRecord(body)) {
+    return {
+      ok: false,
+      response: fail(
+        "VALIDATION_INVALID_BODY",
+        "Send a valid JSON object.",
+        400,
+      ),
+    };
+  }
+
+  return {
+    ok: true,
+    data: body,
+  };
+}
+
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function json(body: Record<string, unknown>, status: number): Response {

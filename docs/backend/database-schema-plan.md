@@ -2,11 +2,12 @@
 
 Date: 2026-05-27
 
-Status: local migration validated; remote push deferred until explicit confirmation.
+Status: local migration validated; remote push approved and applied.
 
-Migration:
+Migrations:
 
 - `supabase/migrations/20260527173000_initial_mvp_schema.sql`
+- `supabase/migrations/20260528103000_initial_mvp_schema.sql`
 
 ## MVP Tables
 
@@ -32,7 +33,7 @@ Migration:
 - `created_at` and `updated_at` where useful.
 - `business_id` on tenant-owned tables.
 - Indexes for `business_id`, common foreign keys, status, due dates, and lookup fields.
-- RLS enabled with policies deferred until B04 implements server auth/profile bootstrap.
+- RLS enabled with policies deferred until B06 implements server-side permissions and audit logs.
 - No raw receipt images, bank alerts, provider secrets, or webhook secrets in normal application tables.
 
 ## B03 Readiness Result
@@ -43,6 +44,6 @@ Migration:
 - The expected local index set is present.
 - Details are recorded in `docs/backend/database-schema-readiness.md`.
 
-## Push Policy
+## Push Result
 
-Do not run `supabase db push` until the migration is reviewed and explicitly approved. B03 defers remote push.
+Remote schema push was approved and completed on 2026-05-28. Both local migrations are present in the remote migration list for project ref `xtalfjnmxnwtogxgtlxn`.

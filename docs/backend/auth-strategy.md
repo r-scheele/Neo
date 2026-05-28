@@ -1,12 +1,12 @@
 # Auth Strategy
 
-Date: 2026-05-27
+Date: 2026-05-28
 
-Status: client boundary complete; server verification implementation deferred.
+Status: B04 server auth/profile bootstrap implemented locally.
 
 ## Decision
 
-Neo keeps Clerk as the Expo app auth provider. The Expo app will call Supabase Edge Functions with Clerk-authenticated requests. Edge Functions will verify the Clerk session and map the actor to Supabase records.
+Neo keeps Clerk as the Expo app auth provider. The Expo app calls Supabase Edge Functions with Clerk-authenticated requests. Edge Functions verify the Clerk session and map the actor to Supabase records.
 
 ## B02 Client Handoff
 
@@ -15,13 +15,15 @@ Neo keeps Clerk as the Expo app auth provider. The Expo app will call Supabase E
 - Tokens are never manually persisted by Neo app code.
 - Missing token/provider cases return a safe `auth_error` result.
 
-## Required Server Behavior
+## B04 Server Bootstrap
 
-- Verify Clerk tokens server-side.
-- Map Clerk users to `profiles`.
-- Resolve active `business_members` records before sensitive reads/writes.
-- Reject unauthorized writes regardless of client UI state.
-- Return safe `permission_denied` style errors without leaking private data.
+- Supabase Edge Functions verify Clerk session tokens with `CLERK_JWKS_URL`.
+- `me-bootstrap` maps authenticated Clerk users to `profiles`.
+- `setup-business` creates or returns the first business and owner membership for a signed-in user.
+- Active `business_members` records are resolved before returning business context.
+- Missing or invalid tokens return safe auth errors through the approved response envelope.
+
+`CLERK_SECRET_KEY` is still pending. The current B04 implementation does not need it for JWKS token verification, but future Clerk API calls or Clerk webhook verification may require it.
 
 ## Client Boundary
 
@@ -31,4 +33,4 @@ Neo keeps Clerk as the Expo app auth provider. The Expo app will call Supabase E
 
 ## Deferred
 
-Edge Functions still need server-side Clerk token verification, profile bootstrap, business membership lookup, and authoritative role checks.
+Authoritative role checks, audit writes, Clerk webhook processing, commerce sync, WhatsApp, and AI workflows remain deferred to later backend prompts.

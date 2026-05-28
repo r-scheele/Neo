@@ -2,7 +2,7 @@
 
 Date: 2026-05-28
 
-Status: B03 complete locally; remote schema push deferred until explicit confirmation.
+Status: B03 complete; remote schema push approved and applied.
 
 ## Local Validation
 
@@ -18,7 +18,7 @@ docker exec supabase_db_neo psql -U postgres -d postgres -Atc "select relname ||
 
 Result:
 
-- Migration `supabase/migrations/20260527173000_initial_mvp_schema.sql` applies cleanly.
+- Migrations `supabase/migrations/20260527173000_initial_mvp_schema.sql` and `supabase/migrations/20260528103000_initial_mvp_schema.sql` apply cleanly.
 - Seed file runs and remains intentionally empty.
 - All 15 planned MVP tables exist locally.
 - RLS is enabled on all planned application tables.
@@ -45,30 +45,28 @@ Result:
 
 ## Known Gaps Before Feature Work
 
-- RLS policies are not implemented yet. B04 must add the server auth/profile bootstrap before production feature endpoints rely on the schema.
-- Remote schema push has not been run.
+- RLS policies are not implemented yet. B04 added the server auth/profile bootstrap; B06 still needs authoritative permissions and audit enforcement before production feature endpoints rely on the schema.
 - Storage buckets and storage policies are documented but not created remotely.
-- Feature-specific endpoint contracts for B05-B08 still need implementation-level review.
+- B05 endpoint contracts are approved. B06-B08 still need implementation-level review.
 - `ai_drafts.draft_text`, WhatsApp message previews, and raw webhook payload storage need privacy review during their feature prompts before real customer data is stored.
 
-## Remote Push Decision
+## Remote Push Result
 
-Remote push is explicitly deferred in this pass.
+Remote push was approved and completed on 2026-05-28 for project ref `xtalfjnmxnwtogxgtlxn`.
 
-When the remote push is approved, use:
+Verified migration list:
 
-```bash
-export SUPABASE_DB_PASSWORD="..."
-npx --yes supabase@latest db push
+```text
+Local          | Remote
+20260527173000 | 20260527173000
+20260528103000 | 20260528103000
 ```
 
-Risk note:
+Notes:
 
-- This changes the linked remote Supabase database for project `xtalfjnmxnwtogxgtlxn`.
-- Review the migration before pushing.
-- Confirm there is no production data that needs backup or migration handling.
-- Do not print or commit `SUPABASE_DB_PASSWORD`.
+- The second migration produced expected already-exists notices because it is idempotent with the first local schema foundation.
+- Do not commit or print `SUPABASE_DB_PASSWORD`.
 
 ## Next Backend Prompt
 
-Run `docs/integration-prompts/backend-deferred/prompts/B04-server-auth-profile-bootstrap.md` next if Clerk server verification inputs are ready.
+Run `docs/integration-prompts/backend-deferred/prompts/B05-commerce-records-backend-sync.md` next.

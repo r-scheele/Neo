@@ -1,7 +1,7 @@
 # B04 Server Auth And Profile Bootstrap Prompt
 
 Status:
-Ready after B03 if Clerk server verification inputs are available. Stop if required Clerk/Supabase secrets are missing.
+Complete locally. `CLERK_JWKS_URL` is set and used for Clerk JWT verification. `CLERK_SECRET_KEY` remains pending for future Clerk API or webhook work.
 
 Do not run this prompt until:
 - B01 Supabase foundation is complete

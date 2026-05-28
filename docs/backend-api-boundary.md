@@ -21,7 +21,7 @@ The backend foundation is now selected and linked:
 - Edge Functions API base URL pattern: `https://xtalfjnmxnwtogxgtlxn.supabase.co/functions/v1`
 - Public API base URL env var: `EXPO_PUBLIC_API_BASE_URL`
 
-B01 linked and scaffolded Supabase. B02 added the typed client API boundary. B03 validated the local schema. These foundation passes do not replace fixture data or implement backend feature workflows.
+B01 linked and scaffolded Supabase. B02 added the typed client API boundary. B03 validated the local schema. B04 added local Clerk JWT verification plus profile/setup-business bootstrap functions. These foundation passes do not replace fixture data or implement backend feature workflows.
 
 ## Non-Goals For This Pass
 
@@ -43,7 +43,7 @@ These decisions are approved for the B01 foundation:
 | Backend provider | Supabase | Existing project linked locally. |
 | Database | Supabase Postgres | Initial migration scaffold exists locally. |
 | Backend execution | Supabase Edge Functions | Function folders are scaffolded. |
-| Backend auth strategy | Clerk-authenticated requests to Edge Functions | Client token handoff exists from B02; server verification helper is deferred to B04. |
+| Backend auth strategy | Clerk-authenticated requests to Edge Functions | Client token handoff exists from B02; server verification and profile bootstrap exist locally from B04. |
 | API base URL variable | `EXPO_PUBLIC_API_BASE_URL` | Points at Supabase Edge Functions base URL. |
 | Public Supabase variables | `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Empty placeholders only in `.env.example`. |
 | Media storage | Supabase Storage | Buckets are documented, not created remotely. |
@@ -54,11 +54,9 @@ These decisions are approved for the B01 foundation:
 
 These implementation decisions remain before feature-complete backend work:
 
-- Server-side Clerk token verification implementation in Edge Functions.
-- Remote database migration approval and push timing. B03 validated the migration locally and deferred remote push.
 - Storage bucket creation and policies.
-- Supabase secrets values for Clerk, OpenAI, Meta WhatsApp, and PostHog.
-- Feature endpoint contracts for B05-B08.
+- Supabase secrets values for `CLERK_SECRET_KEY`, OpenAI, Meta WhatsApp, and PostHog.
+- Feature endpoint implementation for B05-B08. B05 commerce endpoint contracts are approved.
 
 ## Secrets Boundary
 
