@@ -1,3 +1,5 @@
+import type { BackendOrderDetail } from "@/lib/api";
+
 // DEV-ONLY FIXTURE DATA: replace with backend-backed order records before release.
 export type OrderPaymentState = "awaiting-payment" | "receipt-review" | "paid";
 export type OrderDeliveryState = "scheduled" | "in-progress" | "delivered";
@@ -262,4 +264,32 @@ export function getOrderDetailById(orderId?: string): OrderDetailRecord | null {
   }
 
   return null;
+}
+
+export function normalizeBackendOrderDetail(
+  order: BackendOrderDetail,
+): OrderDetailRecord {
+  return {
+    conversationId: order.conversationId,
+    customer: order.customer,
+    delivery: order.delivery,
+    displayId: order.displayId,
+    id: order.id,
+    items: order.items,
+    orderDate: order.orderDate,
+    orderTime: order.orderTime,
+    payment: order.payment,
+    sourceLabel: order.sourceLabel,
+    sourceTitle: order.sourceTitle,
+    statusLabel: order.statusLabel,
+    statusTone: normalizeOrderTone(order.statusTone),
+    timeline: order.timeline.map((event) => ({
+      ...event,
+      tone: normalizeOrderTone(event.tone),
+    })),
+  };
+}
+
+function normalizeOrderTone(tone: BackendOrderDetail["statusTone"]): OrderStatusTone {
+  return tone === "error" ? "warning" : tone;
 }

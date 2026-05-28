@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ImageSourcePropType } from "react-native";
 import {
   Image,
@@ -22,6 +22,7 @@ import {
   trackAnalyticsEvent,
   trackScreenStateSeen,
 } from "@/lib/analytics";
+import { createCommerceOrder, useApiClient } from "@/lib/api";
 import { Link, Pressable, ScrollView, Text, TextInput, View } from "@/src/tw";
 
 import type {
@@ -185,6 +186,15 @@ const paymentStatusOptions: readonly {
     label: "Awaiting receipt",
   },
 ];
+
+const backendPaymentStatus: Record<
+  PaymentStatus,
+  "unpaid" | "awaiting_receipt" | "paid"
+> = {
+  "awaiting-receipt": "awaiting_receipt",
+  paid: "paid",
+  pending: "unpaid",
+};
 
 function getCreateOrderContext(conversationId?: string) {
   if (!conversationId) {
@@ -1180,6 +1190,7 @@ export function CreateOrderScreen({
   conversationId?: string;
   initialState?: MockScreenState;
 }) {
+  const apiClient = useApiClient();
   const router = useRouter();
   const { height, width } = useWindowDimensions();
   const isCompactPhone = height < 760 || width < 380;
@@ -1188,7 +1199,6 @@ export function CreateOrderScreen({
     () => getCreateOrderContext(conversationId),
     [conversationId],
   );
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [screenState, setScreenState] = useState<MockScreenState>(initialState);
   const [items, setItems] = useState<readonly CreateOrderItem[]>(
     initialState === "empty" ? [] : createInitialItems,
@@ -1214,14 +1224,6 @@ export function CreateOrderScreen({
 
   const actionsDisabled =
     screenState === "offline" || screenState === "permission";
-
-  useEffect(() => {
-    return () => {
-      if (saveTimerRef.current) {
-        clearTimeout(saveTimerRef.current);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     trackScreenStateSeen({
@@ -1320,7 +1322,7 @@ export function CreateOrderScreen({
     });
   }
 
-  function saveOrder() {
+  async function saveOrder() {
     if (isSubmitting || actionsDisabled) {
       if (actionsDisabled) {
         setFeedback({
@@ -1351,25 +1353,54 @@ export function CreateOrderScreen({
     }
 
     setIsSubmitting(true);
+    setFeedback({
+      kind: "info",
+      message: "Saving this order to the backend record system...",
+      title: "Saving order",
+    });
+
+    const result = await createCommerceOrder(apiClient, {
+      conversationId,
+      customer: {
+        displayName: context.customerName,
+      },
+      deliveryFeeAmount: Math.trunc(totals.deliveryFee),
+      deliveryZone,
+      items: items.map((item) => ({
+        description: item.description,
+        name: item.name,
+        productId: item.productId,
+        quantity: item.quantity,
+        unitPriceAmount: Math.trunc(item.unitPrice),
+        variant: item.variant,
+      })),
+      notes,
+      paymentStatus: paymentStatus
+        ? backendPaymentStatus[paymentStatus]
+        : "unpaid",
+    });
+
+    setIsSubmitting(false);
+
+    if (!result.ok) {
+      setFeedback({
+        kind: "error",
+        message: result.error.message,
+        title: "Order could not save",
+      });
+      return;
+    }
+
     trackAnalyticsEvent("order_created", {
       item_count_band: getItemCountBand(items.length),
       source: conversationId ? "conversation" : "manual",
     });
     setFeedback({
       kind: "success",
-      message: "Local order saved. Opening the order detail placeholder...",
+      message: "Backend order saved. Opening the durable order record...",
       title: "Order saved",
     });
-
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-    }
-
-    saveTimerRef.current = setTimeout(() => {
-      const localOrderId = `local-${Date.now()}`;
-      router.push(`/order/${localOrderId}` as Href);
-      setIsSubmitting(false);
-    }, 650);
+    router.push(`/order/${result.data.order.id}` as Href);
   }
 
   if (screenState === "loading") {

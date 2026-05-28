@@ -17,8 +17,8 @@ This file lists what is complete, what is runnable now, and what is deferred unt
 - Backend Phase B B01 Supabase foundation is complete.
 - Backend Phase B B02 API client/auth boundary is complete.
 - Backend Phase B B03 database schema readiness is complete with remote schema pushed.
-- Backend Phase B B04 server auth/profile bootstrap is complete locally.
-- Backend Phase B B05 commerce records backend sync is ready to run.
+- Backend Phase B B04 server auth/profile bootstrap is complete.
+- Backend Phase B B05 commerce records backend sync is complete; commerce functions are deployed and the client uses the backend API with isolated demo fallback.
 - Active runnable prompts are Phase A in `docs/integration-prompts/integration-prompt-index.md`.
 - Backend/API prompts are Phase B in `docs/integration-prompts/backend-deferred/backend-deferred-index.md`.
 
@@ -41,16 +41,16 @@ This file lists what is complete, what is runnable now, and what is deferred unt
 
 ## Phase B: Backend/API Integrations
 
-B01 Supabase foundation, B02 API client/auth boundary, B03 database schema readiness, and B04 server auth/profile bootstrap are complete. B05 is the next backend prompt. B06-B08 require the listed auth/secrets/contracts.
+B01 Supabase foundation, B02 API client/auth boundary, B03 database schema readiness, B04 server auth/profile bootstrap, and B05 commerce records backend sync are complete. B06 is the next gated backend prompt after its role/audit contract is approved. B07-B08 require the listed auth/secrets/contracts.
 
 | Order | Integration | Required for real MVP | Current status | Missing packages | Missing config | Missing env vars | Depends on | Decision that unlocks it | Acceptance criteria |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | B01 | Backend provider decision | Yes | Complete | Supabase CLI via `npx` only; no app package needed | Existing Supabase project linked; local `supabase/` foundation scaffolded | Private backend envs stay outside Expo; public placeholders added | Phase A 06 | Supabase project `xtalfjnmxnwtogxgtlxn` linked | Backend decisions are documented clearly enough to unlock API client work. |
 | B02 | API client and auth boundary | Yes | Complete | No new package installed | `lib/api/` exists; Clerk token handoff is client-side only | Real public values stay outside git | B01 | B01 complete | Typed API client parses unknown responses and safe errors. |
 | B03 | Database schema readiness | Yes for real MVP | Complete | Supabase CLI/Docker already available | Local and remote schema ready for durable records | No secrets in client | B01, B02 | Local migration verified; remote schema pushed | Backend feature prompts have a reviewed schema foundation. |
-| B04 | Server auth and profile bootstrap | Yes for real MVP | Complete locally | Supabase Edge Functions | Clerk token verification, profile/bootstrap endpoint, shared function helpers | `CLERK_JWKS_URL` set in Supabase secrets; `CLERK_SECRET_KEY` pending only for future Clerk API/webhook needs | B03 | Clerk verification and profile bootstrap implemented server-side | Feature APIs can safely identify the actor. |
-| B05 | Commerce records backend sync | Yes for real MVP | Ready | No client package decision yet | Durable orders/customers/receipts/follow-ups/Today endpoint implementation | Public API env values only in client; service role stays server-side | B03, B04, B07 if live WhatsApp IDs are required | Reviewed schema is pushed and endpoint contracts approved | Orders, receipts, customers, follow-ups, and Today counts persist through backend records. |
-| B06 | Server-side permissions and audit logs | Yes | Deferred/local-only | No client package decision yet | Trusted role source, server authorization, denied-write responses, audit log writes | Clerk and Supabase service secrets in Supabase secrets, not client | B04, B05 | Role source and audit writes implemented | Sensitive actions require server approval; denied writes do not mutate data; audit records exist. |
+| B04 | Server auth and profile bootstrap | Yes for real MVP | Complete | Supabase Edge Functions | Clerk token verification, profile/bootstrap endpoint, shared function helpers | `CLERK_JWKS_URL` set in Supabase secrets; `CLERK_SECRET_KEY` pending only for future Clerk API/webhook needs | B03 | Clerk verification and profile bootstrap implemented server-side | Feature APIs can safely identify the actor. |
+| B05 | Commerce records backend sync | Yes for real MVP | Complete | No client package decision needed | Durable orders/customers/receipts/follow-ups/Today endpoints implemented and deployed | Public API env values only in client; service role stays server-side | B03, B04 | Reviewed schema pushed and endpoint contracts approved | Orders, receipts, customers, follow-ups, and Today counts persist through backend records. |
+| B06 | Server-side permissions and audit logs | Yes | Gated next | No client package decision yet | Trusted role source, server authorization, denied-write responses, audit log writes | Clerk and Supabase service secrets in Supabase secrets, not client | B04, B05 | Role source and audit writes implemented | Sensitive actions require server approval; denied writes do not mutate data; audit records exist. |
 | B07 | WhatsApp workflow integration | Yes for real MVP | Deferred/local-only | No direct client package approved | Backend WhatsApp Cloud API/webhook integration, mobile status/conversation/send endpoints | Meta WhatsApp secrets in Supabase secrets, not client | B04, B05 if commerce depends on live conversation IDs | WhatsApp token storage, webhook verification, and media strategy implemented | Connection status, inbox, thread, and send actions use backend APIs safely. |
 | B08 | AI draft generation backend | Yes for real MVP | Deferred/local-only | No direct client package approved | Server-side AI orchestration, prompt minimization, draft API contract | OpenAI/API provider secret in Supabase secrets, not client | B04, B07 if live context is required | AI provider and prompt/guardrail policy implemented | Drafts are generated server-side and sensitive drafts route to approval. |
 

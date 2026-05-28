@@ -1,4 +1,15 @@
 export { createApiClient } from "./client";
+export {
+  completeFollowUp,
+  createCommerceOrder,
+  getCommerceOrder,
+  getCustomerProfile,
+  getFollowUps,
+  getReceiptReview,
+  getTodaySummary,
+  rescheduleFollowUp,
+  reviewReceipt,
+} from "./commerce";
 export { resolveApiConfig } from "./config";
 export { apiEndpoints, type ApiEndpointName } from "./endpoints";
 export { checkHealth, type HealthResponse } from "./health";
@@ -21,3 +32,15 @@ export type {
   ApiSuccess,
   ApiTokenProvider,
 } from "./types";
+export type {
+  BackendCustomerProfile,
+  BackendFollowUpQueueItem,
+  BackendFollowUpsResponse,
+  BackendOrderDetail,
+  BackendReceiptDecision,
+  BackendReceiptReview,
+  BackendTodayQueueItem,
+  BackendTodayResponse,
+  BackendTodaySummary,
+  CreateCommerceOrderPayload,
+} from "./commerce";

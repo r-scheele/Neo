@@ -150,7 +150,7 @@ The following must remain mocked, local, disabled, or represented as placeholder
 - Cross-device sync.
 - Admin monitoring.
 
-Backend/API ownership, server-side data contracts, safe error categories, and approved Supabase foundation decisions are defined in `docs/backend-api-boundary.md` and `docs/backend/`. `lib/api/` now owns the typed client boundary from B02, but it must not replace fixture data until the matching backend feature prompt is implemented.
+Backend/API ownership, server-side data contracts, safe error categories, and approved Supabase foundation decisions are defined in `docs/backend-api-boundary.md` and `docs/backend/`. `lib/api/` owns the typed client boundary from B02 and B05 now connects commerce records through Supabase Edge Functions. WhatsApp, AI, permissions/audit, OCR, and payment-provider work remain behind later backend prompts.
 
 ## Quality Gates
 
@@ -165,4 +165,4 @@ Every implementation step should keep these checks green:
 
 ## Ready For Next Step
 
-This architecture is ready for ordered backend integration passes. B01 Supabase foundation, B02 API client/auth boundary, B03 database schema readiness, and B04 server auth/profile bootstrap are complete locally; run B05 commerce records backend sync next only after the remote schema/push decision and endpoint contracts are reviewed.
+This architecture is ready for the remaining ordered backend integration passes. B01 Supabase foundation, B02 API client/auth boundary, B03 database schema readiness, B04 server auth/profile bootstrap, and B05 commerce records backend sync are complete; run B06 server-side permissions and audit logs next.

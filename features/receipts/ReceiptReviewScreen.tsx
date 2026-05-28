@@ -24,6 +24,12 @@ import {
   trackAnalyticsEvent,
   trackScreenStateSeen,
 } from "@/lib/analytics";
+import {
+  getReceiptReview,
+  reviewReceipt,
+  useApiClient,
+  type BackendReceiptDecision,
+} from "@/lib/api";
 import { Link, Pressable, ScrollView, Text, View } from "@/src/tw";
 
 import type {
@@ -32,7 +38,11 @@ import type {
   ReceiptRiskLevel,
   ReceiptRowStatus,
 } from "./receiptReviewData";
-import { formatReceiptNaira, getReceiptReviewById } from "./receiptReviewData";
+import {
+  formatReceiptNaira,
+  getReceiptReviewById,
+  normalizeBackendReceiptReview,
+} from "./receiptReviewData";
 
 type ReceiptDecision = "confirm" | "ask" | "reject" | "escalate";
 
@@ -119,14 +129,14 @@ function getRowStatusStyle(status: ReceiptRowStatus) {
 function getDecisionConfig(decision: ReceiptDecision): DecisionConfig {
   if (decision === "confirm") {
     return {
-      actionLabel: "Save local confirmation",
+      actionLabel: "Save review",
       body:
         "Confirm only if you have checked the matching bank alert outside Neo.",
       borderClassName: "border-neo-success bg-[#EEF8F0]",
       icon: images.iconPaid,
       savedMessage:
-        "This mock decision assumes a human checked the bank alert. No bank lookup, payment provider, or backend was contacted.",
-      savedTitle: "Confirmation saved locally",
+        "Saved through the backend as a human review decision. Neo did not run a bank lookup or auto-verify the screenshot.",
+      savedTitle: "Review saved",
       textClassName: "text-neo-success",
       title: "Confirm this payment?",
       tintColor: colors.success,
@@ -135,13 +145,13 @@ function getDecisionConfig(decision: ReceiptDecision): DecisionConfig {
 
   if (decision === "reject") {
     return {
-      actionLabel: "Save local rejection",
+      actionLabel: "Save rejection",
       body: "Use this when the receipt looks unsafe, altered, or does not match the order.",
       borderClassName: "border-neo-error bg-[#FFF1EF]",
       icon: images.iconWarning,
       savedMessage:
-        "The receipt was rejected in this screen only. No customer message or backend update was sent.",
-      savedTitle: "Receipt rejected locally",
+        "The backend receipt decision was updated. No WhatsApp message was sent.",
+      savedTitle: "Receipt rejected",
       textClassName: "text-neo-error",
       title: "Reject this receipt?",
       tintColor: colors.error,
@@ -150,13 +160,13 @@ function getDecisionConfig(decision: ReceiptDecision): DecisionConfig {
 
   if (decision === "ask") {
     return {
-      actionLabel: "Save ask-customer note",
+      actionLabel: "Save review",
       body: "Use this when you need a clearer receipt, sender name, or bank alert match.",
       borderClassName: "border-neo-info bg-[#EDF6FA]",
       icon: images.iconInbox,
       savedMessage:
-        "Ask-customer was saved locally. Neo did not send a WhatsApp message.",
-      savedTitle: "Ask customer saved locally",
+        "The backend receipt stays pending for a bank check or clearer customer detail. Neo did not send a WhatsApp message.",
+      savedTitle: "More detail needed",
       textClassName: "text-neo-info",
       title: "Ask customer for more detail?",
       tintColor: colors.info,
@@ -169,8 +179,8 @@ function getDecisionConfig(decision: ReceiptDecision): DecisionConfig {
     borderClassName: "border-neo-warning bg-[#FFF7E5]",
     icon: images.iconPermission,
     savedMessage:
-      "Escalation was saved locally for this mock screen. No staff workflow or backend task was created.",
-    savedTitle: "Escalation saved locally",
+      "The backend receipt stays pending for owner or manager review. No staff workflow or message was created.",
+    savedTitle: "Escalation saved",
     textClassName: "text-neo-warning",
     title: "Escalate to manager?",
     tintColor: colors.warning,
@@ -657,7 +667,8 @@ function DecisionConfirmation({
             {config.body}
           </Text>
           <Text className="mt-1 text-[13px] leading-5 text-neo-text-muted">
-            This is local-only. No payment, message, or backend action will run.
+            Neo saves only this review decision. It will not send a WhatsApp
+            message or verify the bank transfer for you.
           </Text>
         </View>
       </View>
@@ -1033,18 +1044,68 @@ export function ReceiptReviewScreen({
   mockRole?: MockStaffRole;
   receiptId?: string;
 }) {
+  const apiClient = useApiClient();
   const router = useRouter();
   const { height, width } = useWindowDimensions();
   const isCompactPhone = height < 760 || width < 380;
   const horizontalPadding = width >= 390 ? 20 : 16;
-  const receipt = useMemo(() => getReceiptReviewById(receiptId), [receiptId]);
-  const [screenState, setScreenState] = useState<MockScreenState>(initialState);
+  const localReceipt = useMemo(() => getReceiptReviewById(receiptId), [receiptId]);
+  const [backendReceipt, setBackendReceipt] =
+    useState<ReceiptReviewRecord | null>(null);
+  const [reloadVersion, setReloadVersion] = useState(0);
+  const [screenState, setScreenState] = useState<MockScreenState>(() =>
+    initialState === "ready" &&
+    receiptId &&
+    isBackendRecordId(receiptId) &&
+    !localReceipt
+      ? "loading"
+      : initialState,
+  );
   const [decision, setDecision] = useState<ReceiptDecision | null>(null);
   const [isZoomed, setIsZoomed] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [pendingDecision, setPendingDecision] = useState<ReceiptDecision | null>(
     null,
   );
+  const [isSavingDecision, setIsSavingDecision] = useState(false);
+  const receipt = backendReceipt ?? localReceipt;
+
+  useEffect(() => {
+    if (!receiptId || initialState !== "ready" || !isBackendRecordId(receiptId)) {
+      return;
+    }
+
+    let isActive = true;
+
+    getReceiptReview(apiClient, receiptId).then((result) => {
+      if (!isActive) {
+        return;
+      }
+
+      if (result.ok) {
+        setBackendReceipt(normalizeBackendReceiptReview(result.data.receipt));
+        setNotice(null);
+        setScreenState("ready");
+        return;
+      }
+
+      if (localReceipt) {
+        setNotice({
+          message: `${result.error.message} Showing the isolated demo receipt instead.`,
+          title: "Backend receipt unavailable",
+        });
+        setScreenState("ready");
+        return;
+      }
+
+      setNotice(null);
+      setScreenState("error");
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [apiClient, initialState, localReceipt, receiptId, reloadVersion]);
 
   useEffect(() => {
     trackScreenStateSeen({
@@ -1097,8 +1158,14 @@ export function ReceiptReviewScreen({
         <StateCard
           actionLabel="Retry receipt review"
           image={images.errorReceiptUnreadable}
-          message="The receipt image or extracted details failed to load. Try again before making any payment decision."
-          onAction={() => setScreenState("ready")}
+          message="The backend receipt record failed to load. Try again before making any payment decision."
+          onAction={() => {
+            if (receiptId && isBackendRecordId(receiptId) && !localReceipt) {
+              setScreenState("loading");
+            }
+
+            setReloadVersion((currentValue) => currentValue + 1);
+          }}
           title="Could not load receipt"
         />
       </View>
@@ -1155,21 +1222,51 @@ export function ReceiptReviewScreen({
     setNotice(null);
   }
 
-  function savePendingDecision() {
+  async function savePendingDecision() {
     if (!pendingDecision || !receipt) {
       return;
     }
 
     const config = getDecisionConfig(pendingDecision);
+    const backendDecision = getBackendReceiptDecision(pendingDecision, receipt);
+
+    if (!isBackendRecordId(receipt.id)) {
+      trackAnalyticsEvent("receipt_decision_recorded", {
+        amount_band: getAmountBand(receipt.expectedAmount),
+        confidence_band: getConfidenceBand(receipt.confidence),
+        decision_type: pendingDecision,
+      });
+      setDecision(pendingDecision);
+      setNotice({
+        message:
+          "Saved in the isolated demo receipt only. Backend receipt decisions need a durable receipt ID.",
+        title: config.savedTitle,
+      });
+      setPendingDecision(null);
+      return;
+    }
+
+    setIsSavingDecision(true);
+    const result = await reviewReceipt(apiClient, receipt.id, backendDecision);
+    setIsSavingDecision(false);
+
+    if (!result.ok) {
+      setNotice({
+        message: result.error.message,
+        title: "Receipt decision could not save",
+      });
+      return;
+    }
+
     trackAnalyticsEvent("receipt_decision_recorded", {
       amount_band: getAmountBand(receipt.expectedAmount),
       confidence_band: getConfidenceBand(receipt.confidence),
       decision_type: pendingDecision,
     });
+    setBackendReceipt(normalizeBackendReceiptReview(result.data.receipt));
     setDecision(pendingDecision);
     setNotice({
-      message:
-        "Saved to local UI only. No payment status, customer message, or backend record was changed.",
+      message: config.savedMessage,
       title: config.savedTitle,
     });
     setPendingDecision(null);
@@ -1237,7 +1334,7 @@ export function ReceiptReviewScreen({
           <DecisionConfirmation
             decision={pendingDecision}
             onCancel={() => setPendingDecision(null)}
-            onSave={savePendingDecision}
+            onSave={isSavingDecision ? () => undefined : savePendingDecision}
           />
         ) : null}
         <DecisionActions
@@ -1249,4 +1346,23 @@ export function ReceiptReviewScreen({
       </View>
     </ScrollView>
   );
+}
+
+function getBackendReceiptDecision(
+  decision: ReceiptDecision,
+  receipt: ReceiptReviewRecord,
+): BackendReceiptDecision {
+  if (decision === "confirm") {
+    return "approved_after_bank_check";
+  }
+
+  if (decision === "reject") {
+    return receipt.state === "unreadable" ? "unreadable" : "rejected_mismatch";
+  }
+
+  return "needs_bank_check";
+}
+
+function isBackendRecordId(recordId: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(recordId);
 }

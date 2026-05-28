@@ -1,9 +1,11 @@
 # customers
 
-Status: deferred stub.
+Status: B05 implemented and deployed.
 
-Future scope:
-- Read and update customer profile, notes, order history, preferences, and safe context.
-- Enforce business membership and avoid leaking customer data across tenants.
+Current scope:
+- Read customer profile, safe metrics, order history, preferences, and notes summary.
+- List and create customers with safe commerce fields only.
+- Enforce active business membership through the shared commerce context.
 
-Do not implement until B05 defines durable commerce record contracts.
+Future B06 scope:
+- Add authoritative permissions and audit logs for sensitive customer changes.

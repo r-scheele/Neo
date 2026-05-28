@@ -1,9 +1,12 @@
 # follow-ups
 
-Status: deferred stub.
+Status: B05 implemented and deployed.
 
-Future scope:
-- Persist follow-up queue state, suggested messages, scheduling, completion, and send results.
-- Enforce WhatsApp service-window and anti-spam rules.
+Current scope:
+- Read backend follow-up queue records and counts.
+- Mark follow-ups complete after a human action.
+- Reschedule follow-ups in backend records.
+- Do not send WhatsApp messages in B05.
 
-Do not implement until B03 and B05 define WhatsApp and record contracts.
+Future B07 scope:
+- Enforce WhatsApp service-window and anti-spam rules before sending messages.

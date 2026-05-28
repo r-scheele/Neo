@@ -4,7 +4,7 @@ Date: 2026-05-27
 
 Goal: move the current local MVP prototype forward through small, ordered prompts without repeatedly running backend-blocked work.
 
-Current status: Phase A prompts 01-12 have been run. Prompt 05 completed safe AsyncStorage persistence. Prompt 06 completed the backend/API documentation boundary. Prompt 07 completed integration status/index cleanup. Prompt 08 completed local-only state hardening after Prompts 10-12 were run out of order. Prompt 09 is complete for production-safe PostHog wiring, Prompt 10 is complete for current client/local state coverage, Prompt 11 is complete as a manual QA baseline, and Prompt 12 is complete as a client release readiness precheck. Backend Phase B B01 is complete as a Supabase project/foundation setup. B02 is complete as the typed API/client auth boundary. B03 is complete with remote schema pushed. B04 is complete locally. B05 is ready to run.
+Current status: Phase A prompts 01-12 have been run. Prompt 05 completed safe AsyncStorage persistence. Prompt 06 completed the backend/API documentation boundary. Prompt 07 completed integration status/index cleanup. Prompt 08 completed local-only state hardening after Prompts 10-12 were run out of order. Prompt 09 is complete for production-safe PostHog wiring, Prompt 10 is complete for current client/local state coverage, Prompt 11 is complete as a manual QA baseline, and Prompt 12 is complete as a client release readiness precheck. Backend Phase B B01 is complete as a Supabase project/foundation setup. B02 is complete as the typed API/client auth boundary. B03 is complete with remote schema pushed. B04 is complete. B05 is complete with deployed commerce functions and client sync wiring.
 
 ## Guiding Rules
 
@@ -12,7 +12,7 @@ Current status: Phase A prompts 01-12 have been run. Prompt 05 completed safe As
 - Verify.
 - Commit.
 - Continue to the next incomplete Phase A prompt.
-- Do not run backend prompts out of order. B05 is next; B06-B08 require their listed prerequisites.
+- Do not run backend prompts out of order. B06 is the next gated prompt; B07-B08 require their listed prerequisites.
 - Do not implement real WhatsApp, AI, payment verification, receipt extraction, backend sync, staff enforcement, or audit logs from Phase A.
 
 ## Phase A Required Order
@@ -39,9 +39,9 @@ Current status: Phase A prompts 01-12 have been run. Prompt 05 completed safe As
 | B01 | Backend provider decision | Complete | Supabase project linked and local foundation scaffolded. |
 | B02 | API client and auth boundary | Complete | `lib/api/` client boundary and Clerk token handoff exist. |
 | B03 | Database schema readiness | Complete | Local migration validated; remote schema pushed. |
-| B04 | Server auth and profile bootstrap | Complete locally | B03 plus Clerk token verification secrets/strategy. |
-| B05 | Commerce records backend sync | Ready | B03-B04 plus reviewed/pushed durable records schema and approved contracts. |
-| B06 | Server-side permissions and audit logs | Deferred | B04-B05 plus trusted role source and audit writes. |
+| B04 | Server auth and profile bootstrap | Complete | B03 plus Clerk token verification secrets/strategy. |
+| B05 | Commerce records backend sync | Complete | B03-B04 plus reviewed/pushed durable records schema and approved contracts. |
+| B06 | Server-side permissions and audit logs | Gated next | B04-B05 plus trusted role source and audit writes. |
 | B07 | WhatsApp workflow integration | Deferred | B04 plus WhatsApp token/webhook/media secrets and contracts. |
 | B08 | AI draft generation backend | Deferred | B04 plus server-side AI provider/prompt policy and secret; B07 if live context is required. |
 
@@ -49,4 +49,4 @@ Current status: Phase A prompts 01-12 have been run. Prompt 05 completed safe As
 
 Complete and record the signed-in portions of `docs/manual-qa-baseline.md` before release candidate work. A partial local preflight and route-smoke run is recorded in `docs/manual-qa-results-2026-05-27.md`.
 
-Run B05 next. Do not run B06-B08 yet; those backend feature passes remain deferred until their required implementation prerequisites are ready.
+Prepare B06 next after approving its role/audit contract. Do not run B07-B08 yet; those backend feature passes remain deferred until their required implementation prerequisites are ready.

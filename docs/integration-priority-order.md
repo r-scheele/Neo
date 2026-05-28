@@ -27,16 +27,16 @@ The Phase A prompt set has been run. A partial local preflight and route-smoke Q
 
 Phase B lives in `docs/integration-prompts/backend-deferred/`.
 
-Backend provider-level decisions are approved, B01-B04 are complete, the remote schema is pushed, and B05 commerce endpoint contracts are approved. Run B05 next, then continue in backend-deferred numeric order only when each prompt's prerequisites are ready.
+Backend provider-level decisions are approved, B01-B05 are complete, the remote schema is pushed, and B05 commerce functions are deployed. Prepare B06 next after approving its role/audit contract, then continue in backend-deferred numeric order only when each prompt's prerequisites are ready.
 
 | Order | Integration | Status | Unlocking decision |
 | --- | --- | --- | --- |
 | B01 | Backend provider decision | Complete | Supabase project linked and foundation scaffolded. |
 | B02 | API client and auth boundary | Complete | `lib/api/` boundary and Clerk token handoff exist. |
 | B03 | Database schema readiness | Complete | Local schema verified and remote schema pushed. |
-| B04 | Server auth and profile bootstrap | Complete locally | Clerk verification and profile bootstrap implemented server-side. |
-| B05 | Commerce records backend sync | Ready | B03-B04 plus reviewed/pushed durable schema and approved contracts. |
-| B06 | Server-side permissions and audit logs | Deferred | B04-B05 plus trusted role source and audit writes. |
+| B04 | Server auth and profile bootstrap | Complete | Clerk verification and profile bootstrap implemented server-side. |
+| B05 | Commerce records backend sync | Complete | Commerce endpoints deployed and client sync wiring added. |
+| B06 | Server-side permissions and audit logs | Gated next | B04-B05 plus trusted role source and audit writes. |
 | B07 | WhatsApp workflow integration | Deferred | B04 plus WhatsApp token/webhook/media strategy implemented. |
 | B08 | AI draft generation backend | Deferred | B04 plus server-side AI provider/prompt policy implemented. |
 

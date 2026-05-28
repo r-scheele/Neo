@@ -2,7 +2,7 @@
 
 Date: 2026-05-27
 
-This sequence follows the Practical Vibe Coding workflow: one focused prompt, verify, commit, continue. Phase A is complete. Backend/API implementation is Phase B; B01-B03 are complete and B04 is next if Clerk server verification inputs are ready.
+This sequence follows the Practical Vibe Coding workflow: one focused prompt, verify, commit, continue. Phase A is complete. Backend/API implementation is Phase B; B01-B05 are complete and B06 is the next gated prompt.
 
 ## Current Active Sequence
 
@@ -10,8 +10,10 @@ This sequence follows the Practical Vibe Coding workflow: one focused prompt, ve
 - Backend work is Phase B.
 - B02 API client and auth boundary is complete.
 - B03 database schema readiness is complete.
-- Run B04 next for server auth/profile bootstrap if Clerk server verification inputs are ready.
-- Do not run B05-B08 yet.
+- B04 server auth/profile bootstrap is complete.
+- B05 commerce records backend sync is complete.
+- Prepare B06 next after approving its role/audit contract for server-side permissions and audit logs.
+- Do not run B07-B08 yet.
 - Prompt 05 AsyncStorage persistence completion is complete.
 - Prompt 06 Backend/API boundary is complete as a documentation-only boundary.
 - Prompt 07 Integration status/index cleanup is complete.
@@ -21,7 +23,7 @@ This sequence follows the Practical Vibe Coding workflow: one focused prompt, ve
 - Prompt 11 Maestro/QA baseline is complete as a manual QA baseline because Maestro was unavailable and not installed.
 - Prompt 12 Client release readiness precheck is complete and found the client is not release-ready yet.
 - Backend B01 Supabase foundation is complete.
-- Backend feature implementation is still deferred.
+- Backend feature implementation has started; WhatsApp, AI, permissions/audit, OCR, and payment-provider work remain deferred.
 
 ## Phase A: Runnable Client/Local Prompts
 
@@ -48,10 +50,10 @@ Phase B lives in `docs/integration-prompts/backend-deferred/`.
 | --- | --- | --- | --- |
 | B01 | Backend provider decision | Complete | Supabase project linked and local backend foundation scaffolded. |
 | B02 | API client and auth boundary | Complete | Typed API/auth boundary exists. |
-| B03 | Database schema readiness | Complete | Local migration verified; remote schema push deferred. |
-| B04 | Server auth and profile bootstrap | Ready if Clerk server inputs exist | Requires B03 and Clerk verification secrets/strategy. |
-| B05 | Commerce records backend sync | Deferred | Requires B03-B04 and reviewed/pushed durable records schema. |
-| B06 | Server-side permissions and audit logs | Deferred | Requires B04-B05, trusted role source, authorization, and audit writes. |
+| B03 | Database schema readiness | Complete | Local migration verified; remote schema pushed. |
+| B04 | Server auth and profile bootstrap | Complete | Requires B03 and Clerk verification secrets/strategy. |
+| B05 | Commerce records backend sync | Complete | Requires B03-B04 and reviewed/pushed durable records schema. |
+| B06 | Server-side permissions and audit logs | Gated next | Requires B04-B05, trusted role source, authorization, and audit writes. |
 | B07 | WhatsApp workflow integration | Deferred | Requires B04 plus WhatsApp token/webhook/media secrets and endpoint contracts. |
 | B08 | AI draft generation backend | Deferred | Requires B04 plus AI provider secret and server-side prompt policy. |
 

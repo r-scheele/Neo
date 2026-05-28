@@ -2,6 +2,7 @@ import type { ImageSourcePropType } from "react-native";
 
 import { images } from "@/constants/images";
 import { routes } from "@/constants/routes";
+import type { BackendTodayQueueItem, BackendTodayResponse } from "@/lib/api";
 
 // DEV-ONLY FIXTURE DATA: replace with backend-backed Today queues before release.
 export type PriorityLevel = "high" | "medium";
@@ -182,4 +183,122 @@ export function getFollowUpsAttentionCount(
   );
 
   return followUpItem?.badgeCount ?? 0;
+}
+
+export function normalizeBackendTodayDashboard(
+  response: BackendTodayResponse,
+): TodayDashboard {
+  const pendingReceipts = response.summary.pendingReceiptsCount;
+  const urgentChats = response.summary.urgentChatsCount;
+  const dueFollowUps = response.summary.dueFollowUpsCount;
+
+  return {
+    aiRecommendation: pendingReceipts > 0
+      ? {
+          actionLabel: "Review receipts",
+          description:
+            "Receipt screenshots still need human bank-alert checks before any payment is treated as settled.",
+          href: getReceiptQueueHref(response.queueItems),
+          title: "Neo recommendation",
+        }
+      : null,
+    queueItems: response.queueItems.map(normalizeBackendQueueItem),
+    summaryMetrics: [
+      {
+        id: "pending-receipts",
+        detail: formatCompactNaira(response.summary.pendingReceiptsAmount),
+        detailTone: pendingReceipts > 0 ? "warning" : "success",
+        icon: images.iconReceiptReview,
+        label: "Pending receipts",
+        value: String(pendingReceipts),
+      },
+      {
+        id: "urgent-chats",
+        detail: urgentChats > 0 ? "Need your reply" : "No waits",
+        detailTone: urgentChats > 0 ? "error" : "success",
+        icon: images.iconInbox,
+        label: "Urgent chats",
+        value: String(urgentChats),
+      },
+      {
+        id: "due-follow-ups",
+        detail: dueFollowUps > 0 ? "Today" : "Clear",
+        detailTone: dueFollowUps > 0 ? "warning" : "success",
+        icon: images.iconFollowUps,
+        label: "Due follow-ups",
+        value: String(dueFollowUps),
+      },
+    ],
+  };
+}
+
+function normalizeBackendQueueItem(item: BackendTodayQueueItem): QueueItem {
+  return {
+    actionLabel: item.actionLabel,
+    badgeCount: item.badgeCount,
+    details: item.details,
+    href: normalizeQueueHref(item),
+    icon: getQueueIcon(item.id),
+    isHighlighted: item.priority === "high",
+    priority: item.priority,
+    reason: item.reason,
+    status: item.status,
+    statusTone: item.statusTone === "neutral" ? "info" : item.statusTone,
+    title: item.title,
+    id: item.id,
+  };
+}
+
+function getQueueIcon(itemId: string): ImageSourcePropType {
+  if (itemId.includes("receipt")) {
+    return images.iconReceiptReview;
+  }
+
+  if (itemId.includes("follow")) {
+    return images.iconFollowUps;
+  }
+
+  if (itemId.includes("order")) {
+    return images.iconOrder;
+  }
+
+  return images.iconInbox;
+}
+
+function normalizeQueueHref(item: BackendTodayQueueItem): string {
+  if (item.id.includes("follow")) {
+    return routes.followUps;
+  }
+
+  if (item.href.startsWith("/receipt/") || item.href.startsWith("/order/")) {
+    return item.href;
+  }
+
+  if (item.id.includes("order")) {
+    return "/order/unpaid-today";
+  }
+
+  return routes.inbox;
+}
+
+function getReceiptQueueHref(items: readonly BackendTodayQueueItem[]): string {
+  const receiptItem = items.find((item) => item.id.includes("receipt"));
+
+  return receiptItem ? normalizeQueueHref(receiptItem) : routes.approvals;
+}
+
+function formatCompactNaira(amount: number): string {
+  if (amount <= 0) {
+    return "NGN 0";
+  }
+
+  if (amount >= 1000000) {
+    return `NGN ${(amount / 1000000).toFixed(1)}m`;
+  }
+
+  if (amount >= 1000) {
+    return `NGN ${(amount / 1000).toFixed(1)}k`;
+  }
+
+  return `NGN ${amount}`;
 }

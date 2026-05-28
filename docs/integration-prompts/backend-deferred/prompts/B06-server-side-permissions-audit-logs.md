@@ -1,7 +1,7 @@
 # B06 Server-Side Permissions And Audit Logs Prompt
 
 Status:
-Deferred until B04 server auth/profile bootstrap and B05 commerce records backend sync are complete.
+Gated next. B04 server auth/profile bootstrap and B05 commerce records backend sync are complete, but this prompt still needs the trusted role source and audit write contract to be approved before implementation.
 
 Do not run this prompt until:
 - B04 server auth/profile bootstrap is complete

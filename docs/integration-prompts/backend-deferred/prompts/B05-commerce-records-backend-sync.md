@@ -1,7 +1,7 @@
 # B05 Commerce Records Backend Sync Prompt
 
 Status:
-Ready. B03 and B04 are complete, the remote schema is pushed, and the commerce endpoint contracts are approved.
+Complete. B05 commerce Edge Functions are implemented and deployed, and the Expo client uses backend-backed commerce APIs with isolated demo fallback for old local fixture IDs.
 
 Do not run this prompt until:
 - B03 database schema readiness is complete
