@@ -101,6 +101,12 @@ Current status:
 - Add abstractions only when they remove real duplication or match an established local pattern.
 - Preserve existing behavior and UI unless the task explicitly asks to change them.
 
+## Git And Branch Naming Rules
+
+- Do not use `codex/` as a branch prefix in this repository unless the user explicitly asks for it.
+- Do not add Codex-branded branch names, PR titles, commit messages, or user-facing repo text unless explicitly requested.
+- Prefer neutral branch prefixes such as `feature/`, `fix/`, `docs/`, `chore/`, or `backend/` based on the work type.
+
 ## Architecture
 
 Neo is an app-first mobile MVP. The first implementation should use typed local/mock data, generated assets, and clear route boundaries. Real WhatsApp sync, AI calls, receipt extraction, payment verification, team permission enforcement, and multi-user sync require the approved Supabase backend boundary.
