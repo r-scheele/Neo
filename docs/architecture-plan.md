@@ -1,6 +1,6 @@
 # Architecture Plan
 
-Status: Draft technical architecture for Neo. This document is for planning only; no app source code has been created yet.
+Status: Current client architecture for the local MVP prototype. App source exists; production integrations remain pending.
 
 ## Sources
 
@@ -18,17 +18,17 @@ Status: Draft technical architecture for Neo. This document is for planning only
 
 Neo should be built as a mobile-first Expo app using React Native, TypeScript, Expo Router, NativeWind, Zustand, AsyncStorage, Clerk, PostHog, and EAS Build.
 
-The first implementation should be an app-first MVP that can be built feature by feature with typed local/mock data, generated assets, and clear route boundaries. Real WhatsApp, AI, receipt extraction, payment, and multi-user sync integrations require a server boundary later because their secrets and sensitive operations cannot safely live in a mobile client.
+The current implementation is an app-first local MVP prototype built feature by feature with typed local/mock data, generated assets, and clear route boundaries. Real WhatsApp, AI, receipt extraction, payment, and multi-user sync integrations require the approved Supabase backend boundary because their secrets and sensitive operations cannot safely live in a mobile client.
 
 ## Primary Decision
 
-Build the client app first. Do not introduce a custom backend or database during the initial app scaffold or first UI screen work.
+The client app has been built first. The backend provider is now selected as Supabase, with Supabase Postgres, Edge Functions, and Storage. Keep the current fixture-driven client intact until B04-B08 complete the auth foundation and feature workflows.
 
-This keeps the MVP simple and lets design, navigation, assets, state ownership, TypeScript, and linting stabilize before live integrations are added. Production integrations must be introduced through explicit future architecture decisions.
+This keeps service work narrow and lets design, navigation, assets, state ownership, TypeScript, and linting stay stable before live integrations are added. Production integrations must be introduced through ordered backend prompts, not broad rewrites.
 
 ## V1 Architecture
 
-V1 means the first buildable mobile app foundation and feature-by-feature MVP screens.
+V1 means the current buildable mobile app foundation and feature-by-feature local MVP screens.
 
 | Area | V1 Decision | Reason |
 | --- | --- | --- |
@@ -41,23 +41,24 @@ V1 means the first buildable mobile app foundation and feature-by-feature MVP sc
 | Auth | Clerk | Required for a business app with private conversations, staff roles, and settings |
 | Analytics | PostHog | Useful for activation and funnel learning, with strict privacy limits |
 | Builds | EAS Build | Standard production build path for Expo |
-| Backend | Deferred | Not needed for first app shell or static UI implementation |
-| Database | Deferred | Do not choose one until live sync, team data, or integrations require it |
+| Backend | Supabase Edge Functions | Server-owned API boundary for Clerk-authenticated mobile requests |
+| Database | Supabase Postgres | Durable records for businesses, members, customers, orders, receipts, follow-ups, conversations, approvals, media references, and audit logs |
+| Media storage | Supabase Storage | Private buckets and signed URLs for receipt, WhatsApp, customer, product, and business media |
 
 ## Future Architecture
 
-Future architecture begins when the app needs real data sync, live WhatsApp messages, AI calls, payment/receipt workflows, team roles, or admin operations.
+Future architecture implementation begins when the app needs real data sync, live WhatsApp messages, AI calls, payment/receipt workflows, team roles, or admin operations.
 
-Future backend decisions must answer:
+The B01 backend foundation answers the provider-level decisions:
 
-- Where customer conversations, orders, receipts, follow-ups, and settings live.
-- How WhatsApp webhooks are received and verified.
-- Where AI prompts, provider keys, guardrails, and audit logs run.
-- How manual receipt review records are stored without implying automatic payment confirmation.
-- How owner/staff permissions are enforced beyond client-side checks.
-- How analytics and support logs avoid private customer content.
+- Customer conversations, orders, receipts, follow-ups, and settings live in Supabase Postgres.
+- WhatsApp and Clerk webhooks are received through Supabase Edge Functions.
+- AI provider keys, Meta tokens, Clerk secrets, webhook secrets, and service role keys live in Supabase secrets.
+- Receipt media lives in private Supabase Storage buckets.
+- Owner/staff permissions must be enforced in Edge Functions.
+- Audit logs live in Supabase Postgres with safe metadata.
 
-No future backend or database is selected in this plan.
+Feature implementation remains deferred to B04-B08.
 
 ## Route Architecture
 
@@ -85,9 +86,9 @@ The first Home screen implementation should map to the Today Command Center tab,
 | Resource identity | Expo Router params | Route | Conversation ID, order ID, receipt ID, customer ID |
 | Shared client state | Zustand | Optional AsyncStorage | Setup progress, safe preferences, local demo queues |
 | Auth state | Clerk | Clerk-managed | Do not manually persist auth tokens |
-| Generated assets | `constants/images.ts` later | Bundled app assets | Centralize imports and names |
-| Analytics events | `lib/analytics/` later | PostHog service | Typed events, no message text or private data |
-| Live external data | Future backend | Future decision | WhatsApp, AI, payments, receipts, multi-user data |
+| Generated assets | `constants/images.ts` | Bundled app assets | Centralized imports and names |
+| Analytics events | `lib/analytics/` | PostHog service | Typed events, no message text or private data |
+| Live external data | Supabase backend | Supabase Postgres/Storage | WhatsApp, AI, payments, receipts, and multi-user data remain deferred until B04-B08 |
 
 ## Feature Build Pattern
 
@@ -104,7 +105,7 @@ Each feature should be buildable in a narrow vertical slice:
 
 ## Design System Boundary
 
-The visual system belongs in app constants and reusable UI components once the app is scaffolded.
+The visual system belongs in app constants and reusable UI components.
 
 Required foundations:
 
@@ -122,12 +123,20 @@ Do not create a green-only interface, nested cards, oversized marketing hero scr
 
 Generated raster assets already live in `assets/images/`. Production SVG icon sources live in `assets/icons/`.
 
-When the app is scaffolded:
-
-- Create `constants/images.ts`.
-- Import generated PNG assets through that constants file.
+- Import generated PNG assets through `constants/images.ts`.
 - Treat `assets/icons/*.svg` as source artwork until an SVG rendering approach is approved.
 - Do not add an SVG runtime dependency during screen implementation without an explicit dependency decision.
+
+## Environment And Styling Config
+
+The current NativeWind v5/Tailwind v4 setup is CSS-first:
+
+- `metro.config.js` wraps Expo Metro with `withNativewind`.
+- `postcss.config.mjs` uses `@tailwindcss/postcss`.
+- `src/global.css` imports Tailwind layers, imports `nativewind/theme`, and defines Neo theme tokens.
+- `app/_layout.tsx` imports `src/global.css` at the root.
+
+`babel.config.js`, `tailwind.config.js`, and `nativewind.config.js` are intentionally absent. Do not add them unless a future Tailwind customization or NativeWind version change makes them necessary.
 
 ## Integration Boundary
 
@@ -141,9 +150,11 @@ The following must remain mocked, local, disabled, or represented as placeholder
 - Cross-device sync.
 - Admin monitoring.
 
+Backend/API ownership, server-side data contracts, safe error categories, and approved Supabase foundation decisions are defined in `docs/backend-api-boundary.md` and `docs/backend/`. `lib/api/` now owns the typed client boundary from B02, but it must not replace fixture data until the matching backend feature prompt is implemented.
+
 ## Quality Gates
 
-After the app scaffold exists, every implementation step should keep these checks green:
+Every implementation step should keep these checks green:
 
 - TypeScript check.
 - Lint.
@@ -154,12 +165,4 @@ After the app scaffold exists, every implementation step should keep these check
 
 ## Ready For Next Step
 
-This architecture is ready for:
-
-- `AGENTS.md` generation.
-- Expo scaffold planning.
-- UI design prompt generation.
-- Home/Today Command Center implementation planning.
-
-It is not a signal to start feature coding yet.
-
+This architecture is ready for ordered backend integration passes. B01 Supabase foundation, B02 API client/auth boundary, and B03 database schema readiness are complete; run B04 server auth/profile bootstrap next if Clerk server verification inputs are ready.
