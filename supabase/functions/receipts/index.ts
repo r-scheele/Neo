@@ -1,4 +1,5 @@
 import { getRouteParts, requireCommerceContext } from "../_shared/commerceContext.ts";
+import type { CommerceContext } from "../_shared/commerceContext.ts";
 import {
   fail,
   handleOptions,
@@ -15,6 +16,11 @@ import {
   requiredString,
   safeJsonArray,
 } from "../_shared/postgrest.ts";
+import {
+  amountBand,
+  requirePermission,
+  writeRequiredAuditLog,
+} from "../_shared/permissions.ts";
 
 type ReceiptRow = {
   id: string;
@@ -54,22 +60,22 @@ Deno.serve(async (request) => {
     return context.response;
   }
 
+  const commerceContext = context.context;
   const parts = getRouteParts(request, "receipts");
 
   if (request.method === "GET" && parts.length === 1) {
-    return getReceiptDetail(parts[0], context.context.businessId);
+    return getReceiptDetail(parts[0], commerceContext.businessId);
   }
 
   if (request.method === "GET" && parts.length === 0) {
-    return listReceipts(request, context.context.businessId);
+    return listReceipts(request, commerceContext.businessId);
   }
 
   if (request.method === "PATCH" && parts.length === 2 && parts[1] === "review") {
     return reviewReceipt(
       request,
       parts[0],
-      context.context.businessId,
-      context.context.membership.id,
+      commerceContext,
     );
   }
 
@@ -146,8 +152,7 @@ async function listReceipts(request: Request, businessId: string): Promise<Respo
 async function reviewReceipt(
   request: Request,
   receiptId: string,
-  businessId: string,
-  memberId: string,
+  context: CommerceContext,
 ): Promise<Response> {
   const body = await readJsonRecord(request);
   if (!body.ok) {
@@ -163,16 +168,37 @@ async function reviewReceipt(
     );
   }
 
+  const permission = await requirePermission(context, "receipt.review_decide", {
+    endpoint: "receipts.review",
+    entityId: receiptId,
+    entityType: "receipt",
+    metadata: {
+      decision,
+    },
+  });
+  if (!permission.ok) {
+    return permission.response;
+  }
+
+  const existing = await selectReceipt(receiptId, context.businessId);
+  if (!existing.ok) {
+    return existing.response;
+  }
+
+  if (!existing.data) {
+    return fail("RECEIPT_NOT_FOUND", "This receipt could not be found.", 404);
+  }
+
   const receipt = await dbRequest(
     `/rest/v1/receipts?id=eq.${encodeURIComponent(receiptId)}` +
-      `&business_id=eq.${encodeURIComponent(businessId)}` +
+      `&business_id=eq.${encodeURIComponent(context.businessId)}` +
       "&select=id,customer_id,order_id,review_status,extraction_status,payment_decision,amount_claimed,currency,risk_flags,reviewed_at,created_at,updated_at",
     {
       body: {
         payment_decision: decision,
         review_status: decision === "needs_bank_check" ? "pending" : "reviewed",
         reviewed_at: new Date().toISOString(),
-        reviewed_by_member_id: memberId,
+        reviewed_by_member_id: context.membership.id,
       },
       method: "PATCH",
       prefer: "return=representation",
@@ -182,6 +208,26 @@ async function reviewReceipt(
 
   if (!receipt.ok) {
     return receipt.response;
+  }
+
+  const audit = await writeRequiredAuditLog(context, {
+    action: "receipt.review_decision_recorded",
+    entityId: receipt.data.id,
+    entityType: "receipt",
+    metadata: {
+      actor_role: context.membership.role,
+      amount_band: amountBand(receipt.data.amountClaimed),
+      decision,
+      has_bank_check: decision === "approved_after_bank_check",
+      next_status: receipt.data.reviewStatus,
+      permission: "receipt.review_decide",
+      previous_decision: existing.data.paymentDecision,
+      previous_status: existing.data.reviewStatus,
+      result: "allowed",
+    },
+  });
+  if (!audit.ok) {
+    return audit.response;
   }
 
   return ok({

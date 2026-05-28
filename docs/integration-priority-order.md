@@ -1,6 +1,6 @@
 # Integration Priority Order
 
-Date: 2026-05-27
+Date: 2026-05-28
 
 This file mirrors the current two-phase integration plan. The canonical active prompt index is `docs/integration-prompts/integration-prompt-index.md`.
 
@@ -27,7 +27,7 @@ The Phase A prompt set has been run. A partial local preflight and route-smoke Q
 
 Phase B lives in `docs/integration-prompts/backend-deferred/`.
 
-Backend provider-level decisions are approved, B01-B05 are complete, the remote schema is pushed, B05 commerce functions are deployed, and the B06 role/audit contract is approved. Run B06 next, then continue in backend-deferred numeric order only when each prompt's prerequisites are ready.
+Backend provider-level decisions are approved, B01-B06 are complete, the remote schema is pushed, and the B05/B06 Edge Functions are deployed. Continue in backend-deferred numeric order only when each prompt's prerequisites are ready.
 
 | Order | Integration | Status | Unlocking decision |
 | --- | --- | --- | --- |
@@ -36,7 +36,7 @@ Backend provider-level decisions are approved, B01-B05 are complete, the remote 
 | B03 | Database schema readiness | Complete | Local schema verified and remote schema pushed. |
 | B04 | Server auth and profile bootstrap | Complete | Clerk verification and profile bootstrap implemented server-side. |
 | B05 | Commerce records backend sync | Complete | Commerce endpoints deployed and client sync wiring added. |
-| B06 | Server-side permissions and audit logs | Ready | B04-B05 plus approved permissions/audit contract and retention policy. |
+| B06 | Server-side permissions and audit logs | Complete and deployed; signed-in QA pending | B04-B05 plus approved permissions/audit contract and retention policy. |
 | B07 | WhatsApp workflow integration | Deferred | B04 plus WhatsApp token/webhook/media strategy implemented. |
 | B08 | AI draft generation backend | Deferred | B04 plus server-side AI provider/prompt policy implemented. |
 

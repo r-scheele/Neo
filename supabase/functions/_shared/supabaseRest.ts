@@ -45,8 +45,15 @@ export async function upsertProfileForUser(
 ): Promise<SupabaseResult<Profile>> {
   const existing = await selectProfileByClerkId(user.clerkUserId);
 
-  if (!existing.ok || existing.data) {
+  if (!existing.ok) {
     return existing;
+  }
+
+  if (existing.data) {
+    return {
+      ok: true,
+      data: existing.data,
+    };
   }
 
   return insertProfile(user);

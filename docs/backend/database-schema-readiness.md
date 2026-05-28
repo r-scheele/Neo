@@ -45,9 +45,9 @@ Result:
 
 ## Known Gaps Before Feature Work
 
-- RLS policies are not implemented yet. B04 added the server auth/profile bootstrap; B06 still needs authoritative permissions and audit enforcement before production feature endpoints rely on the schema.
+- RLS policies are not implemented yet. B04 added the server auth/profile bootstrap; B06 added deployed Edge Function authorization and audit writes before production feature endpoints rely on the schema.
 - Storage buckets and storage policies are documented but not created remotely.
-- B05 endpoint contracts are approved and implemented. B06-B08 still need implementation-level review.
+- B05 endpoint contracts are approved and implemented. B06 is implemented and deployed; B07-B08 still need implementation-level review.
 - `ai_drafts.draft_text`, WhatsApp message previews, and raw webhook payload storage need privacy review during their feature prompts before real customer data is stored.
 
 ## Remote Push Result
@@ -69,4 +69,4 @@ Notes:
 
 ## Next Backend Prompt
 
-Run `docs/integration-prompts/backend-deferred/prompts/B06-server-side-permissions-audit-logs.md` next.
+B06 still needs signed-in Clerk QA before release. B07 remains deferred until Meta WhatsApp secrets/contracts are ready.

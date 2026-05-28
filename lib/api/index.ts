@@ -1,5 +1,6 @@
 export { createApiClient } from "./client";
 export {
+  cancelCommerceOrder,
   completeFollowUp,
   createCommerceOrder,
   getCommerceOrder,
@@ -9,6 +10,7 @@ export {
   getTodaySummary,
   rescheduleFollowUp,
   reviewReceipt,
+  updateCommerceOrderDeliveryStatus,
 } from "./commerce";
 export { resolveApiConfig } from "./config";
 export { apiEndpoints, type ApiEndpointName } from "./endpoints";
@@ -34,6 +36,7 @@ export type {
 } from "./types";
 export type {
   BackendCustomerProfile,
+  BackendOrderDeliveryState,
   BackendFollowUpQueueItem,
   BackendFollowUpsResponse,
   BackendOrderDetail,

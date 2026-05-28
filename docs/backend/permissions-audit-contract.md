@@ -166,7 +166,8 @@ Sensitive allowed writes must not be treated as complete unless the correspondin
 
 B06 should prefer a transaction-safe database path for sensitive mutations and audit writes. If an Edge Function cannot make the data mutation and audit write atomic yet, it must return a safe error if the audit write fails and document any residual consistency risk.
 
+B06 implementation writes required audit rows from Edge Functions after the sensitive mutation and returns `AUDIT_WRITE_FAILED` if the audit insert fails. A future database RPC pass can make these mutation/audit pairs fully atomic.
+
 ## Retention
 
 Use the 180-day MVP audit retention target documented in `docs/backend/audit-log-retention.md` unless product or legal review changes it before launch.
-
