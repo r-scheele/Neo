@@ -19,7 +19,7 @@ The active runnable prompt sequence lives in `../integration-prompt-index.md`.
 
 ## How To Use Later
 
-1. Approve the B06 role/audit contract, then run `prompts/B06-server-side-permissions-audit-logs.md`.
+1. Run `prompts/B06-server-side-permissions-audit-logs.md` next. The approved B06 contract is `docs/backend/permissions-audit-contract.md`.
 2. Verify, review, and commit.
 3. Continue through B06-B08 one prompt at a time only after each prompt's required secrets/contracts exist.
 

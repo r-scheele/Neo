@@ -11,7 +11,7 @@ All prompts in this index are Phase B. B01 Supabase foundation, B02 API/auth bou
 | B03 | Database schema readiness | `prompts/B03-database-schema-readiness.md` | Complete | Local migration validated; remote schema pushed | `verify supabase schema readiness` |
 | B04 | Server auth and profile bootstrap | `prompts/B04-server-auth-profile-bootstrap.md` | Complete | JWKS verification, profile bootstrap, and setup-business bootstrap exist | `add server auth bootstrap` |
 | B05 | Commerce records backend sync | `prompts/B05-commerce-records-backend-sync.md` | Complete | Commerce functions deployed; client sync wiring added | `connect commerce records sync` |
-| B06 | Server-side permissions and audit logs | `prompts/B06-server-side-permissions-audit-logs.md` | Gated next | B04-B05 plus trusted role source, audit writes, retention policy | `enforce server permissions` |
+| B06 | Server-side permissions and audit logs | `prompts/B06-server-side-permissions-audit-logs.md` | Ready | B04-B05 plus approved permissions/audit contract and retention policy | `enforce server permissions` |
 | B07 | WhatsApp workflow integration | `prompts/B07-whatsapp-workflow-integration.md` | Deferred | B04 plus Meta WhatsApp token/webhook/media secrets and contracts | `connect whatsapp workflow` |
 | B08 | AI draft generation backend | `prompts/B08-ai-draft-generation-backend.md` | Deferred | B04 plus AI provider secret, prompt policy, and B07 if live WhatsApp context is required | `connect ai draft workflow` |
 
@@ -27,6 +27,6 @@ All prompts in this index are Phase B. B01 Supabase foundation, B02 API/auth bou
 
 ## Next Prompt
 
-Approve the B06 role/audit contract, then run `prompts/B06-server-side-permissions-audit-logs.md`.
+Run `prompts/B06-server-side-permissions-audit-logs.md` next. The approved role/audit contract is `docs/backend/permissions-audit-contract.md`.
 
 Until B06-B08 are complete, keep permissions/audit, WhatsApp, AI, and external-provider workflows disabled or clearly marked as dev/demo behavior.

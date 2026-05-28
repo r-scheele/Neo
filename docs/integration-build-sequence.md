@@ -2,7 +2,7 @@
 
 Date: 2026-05-27
 
-This sequence follows the Practical Vibe Coding workflow: one focused prompt, verify, commit, continue. Phase A is complete. Backend/API implementation is Phase B; B01-B05 are complete and B06 is the next gated prompt.
+This sequence follows the Practical Vibe Coding workflow: one focused prompt, verify, commit, continue. Phase A is complete. Backend/API implementation is Phase B; B01-B05 are complete and B06 is the next ready prompt.
 
 ## Current Active Sequence
 
@@ -12,7 +12,7 @@ This sequence follows the Practical Vibe Coding workflow: one focused prompt, ve
 - B03 database schema readiness is complete.
 - B04 server auth/profile bootstrap is complete.
 - B05 commerce records backend sync is complete.
-- Prepare B06 next after approving its role/audit contract for server-side permissions and audit logs.
+- Run B06 next using the approved permissions/audit contract in `docs/backend/permissions-audit-contract.md`.
 - Do not run B07-B08 yet.
 - Prompt 05 AsyncStorage persistence completion is complete.
 - Prompt 06 Backend/API boundary is complete as a documentation-only boundary.
@@ -53,7 +53,7 @@ Phase B lives in `docs/integration-prompts/backend-deferred/`.
 | B03 | Database schema readiness | Complete | Local migration verified; remote schema pushed. |
 | B04 | Server auth and profile bootstrap | Complete | Requires B03 and Clerk verification secrets/strategy. |
 | B05 | Commerce records backend sync | Complete | Requires B03-B04 and reviewed/pushed durable records schema. |
-| B06 | Server-side permissions and audit logs | Gated next | Requires B04-B05, trusted role source, authorization, and audit writes. |
+| B06 | Server-side permissions and audit logs | Ready | Requires B04-B05 plus the approved permissions/audit contract and retention policy. |
 | B07 | WhatsApp workflow integration | Deferred | Requires B04 plus WhatsApp token/webhook/media secrets and endpoint contracts. |
 | B08 | AI draft generation backend | Deferred | Requires B04 plus AI provider secret and server-side prompt policy. |
 

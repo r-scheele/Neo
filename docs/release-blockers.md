@@ -19,7 +19,7 @@ Verdict: Neo is not ready for a client release candidate or a real backend-backe
 
 | Severity | Blocker | Evidence | Required resolution | Owner integration |
 | --- | --- | --- | --- | --- |
-| P0 | Remaining backend feature workflows are not implemented | B01-B05 are complete, but WhatsApp, AI, permissions, audit logs, OCR, and payment-provider verification are still deferred. | Prepare B06 next after approving its role/audit contract, then continue through B07-B08 only when each prompt's prerequisites are ready. | Backend deferred B06-B08 |
+| P0 | Remaining backend feature workflows are not implemented | B01-B05 are complete, but WhatsApp, AI, permissions, audit logs, OCR, and payment-provider verification are still deferred. | Run B06 next using the approved permissions/audit contract, then continue through B07-B08 only when each prompt's prerequisites are ready. | Backend deferred B06-B08 |
 | P0 | Receipt/payment decisions lack server permissions and audit logs | Receipt review decisions now save through the backend, but B06 still needs authoritative role enforcement and audit writes. | Add server-side permissions and audit logs before release. | Backend permissions, audit logs |
 | P0 | Staff roles are mock route params | `role` query params drive approvals/receipt/permission state. | Use trusted auth/backend role source and server-side authorization. | Clerk auth and server-side permissions |
 | P0 | WhatsApp connection and messaging are mocked | WhatsApp setup uses local status; inbox/conversation/follow-ups use fixture data and local send notices. | Integrate WhatsApp through backend; keep tokens and webhooks server-side. | WhatsApp workflow integration |

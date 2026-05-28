@@ -235,7 +235,7 @@ Allowed decisions:
 - `rejected_mismatch`
 - `unreadable`
 
-This endpoint must not auto-confirm payment from screenshot extraction alone. `approved_after_bank_check` requires a deliberate human review action and must leave audit enforcement to B06 if audit writes are not implemented yet.
+This endpoint must not auto-confirm payment from screenshot extraction alone. `approved_after_bank_check` requires a deliberate human review action. B06 must enforce the receipt-review permission and write `receipt.review_decision_recorded` according to `docs/backend/permissions-audit-contract.md`.
 
 `GET /receipts?reviewStatus=&limit=&cursor=`
 
