@@ -1,5 +1,19 @@
-import { PlaceholderScreen } from "@/components/layout/PlaceholderScreen";
+import { useLocalSearchParams } from "expo-router";
+
+import { getMockScreenState } from "@/components/feedback/ScreenState";
+import { ApprovalQueueScreen } from "@/features/approvals/ApprovalQueueScreen";
+import { getMockStaffRole } from "@/features/permissions/permissionData";
 
 export default function ApprovalsRoute() {
-  return <PlaceholderScreen title="Approvals" />;
+  const { role, state } = useLocalSearchParams<{
+    role?: string | string[];
+    state?: string | string[];
+  }>();
+
+  return (
+    <ApprovalQueueScreen
+      initialState={getMockScreenState(state)}
+      mockRole={getMockStaffRole(role)}
+    />
+  );
 }

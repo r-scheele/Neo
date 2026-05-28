@@ -1,9 +1,21 @@
 import { useLocalSearchParams } from "expo-router";
 
-import { PlaceholderScreen } from "@/components/layout/PlaceholderScreen";
+import { getMockScreenState } from "@/components/feedback/ScreenState";
+import { OrderDetailScreen } from "@/features/order/OrderDetailScreen";
+import { ProtectedRouteGuard } from "@/lib/auth/navigation";
 
 export default function OrderDetailRoute() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, state } = useLocalSearchParams<{
+    id?: string;
+    state?: string | string[];
+  }>();
 
-  return <PlaceholderScreen title="Order detail" description={`ID: ${id ?? ""}`} />;
+  return (
+    <ProtectedRouteGuard>
+      <OrderDetailScreen
+        initialState={getMockScreenState(state)}
+        orderId={id}
+      />
+    </ProtectedRouteGuard>
+  );
 }
