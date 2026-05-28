@@ -1,19 +1,22 @@
 # Backend Implementation Roadmap
 
-Date: 2026-05-27
+Date: 2026-05-28
 
-Status: B01-B03 foundation complete; continue with B04 server auth/profile bootstrap if Clerk server inputs are ready.
+Status: B01-B04 foundation complete; B05 is ready to run.
 
 ## Current State
 
 - Existing Supabase project `xtalfjnmxnwtogxgtlxn` is linked locally.
 - Local `supabase/` structure exists.
-- Initial MVP schema migration exists locally and validates with local Supabase reset.
+- Initial MVP schema migrations exist locally, validate with local Supabase reset, and are applied remotely.
 - Edge Function folders are scaffolded.
 - Storage and secrets setup docs exist.
 - Typed Expo API client boundary exists in `lib/api/`.
 - Clerk token handoff is defined through `useApiClient()` and Clerk's `getToken()`.
-- No backend feature has been completed yet.
+- Server-side Clerk JWT verification, profile bootstrap, and setup-business bootstrap exist in Supabase Edge Functions.
+- `CLERK_JWKS_URL` is set in Supabase secrets. `CLERK_SECRET_KEY` remains pending for future Clerk API/webhook needs.
+- B05 commerce endpoint contracts are approved for orders, customers, receipts, follow-ups, and Today counts.
+- No commerce implementation, WhatsApp, AI, receipt OCR, payment verification, permissions/audit enforcement, or fixture replacement has been completed yet.
 
 ## Backend Phase Order
 
@@ -22,8 +25,8 @@ Status: B01-B03 foundation complete; continue with B04 server auth/profile boots
 | B01 | Backend provider/project foundation | Complete |
 | B02 | API client and Clerk auth boundary | Complete |
 | B03 | Database schema readiness | Complete |
-| B04 | Server auth and profile bootstrap | Ready if Clerk server verification inputs exist |
-| B05 | Commerce records backend sync | Deferred until B03-B04 |
+| B04 | Server auth and profile bootstrap | Complete locally |
+| B05 | Commerce records backend sync | Ready |
 | B06 | Server-side permissions and audit logs | Deferred until B05 |
 | B07 | WhatsApp workflow integration | Deferred until B04 plus Meta secrets and endpoint contracts |
 | B08 | AI draft generation backend | Deferred until B04 plus AI provider secret and prompt policy |
@@ -31,7 +34,7 @@ Status: B01-B03 foundation complete; continue with B04 server auth/profile boots
 ## Do Not Do Yet
 
 - Do not replace fixture data.
-- Do not run `supabase db push` until explicitly confirmed; B03 recorded remote push as deferred.
+- Do not rerun remote schema pushes without reviewing the migration diff and confirming intent.
 - Do not deploy Edge Functions as production features.
 - Do not integrate WhatsApp, OpenAI, payments, OCR, or webhooks.
 - Do not call B05-B08 endpoints from production flows until their prompts are implemented.

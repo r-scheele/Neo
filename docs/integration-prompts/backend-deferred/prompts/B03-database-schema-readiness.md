@@ -1,7 +1,7 @@
 # B03 Database Schema Readiness Prompt
 
 Status:
-Complete. Local Supabase reset applies the MVP schema migration cleanly, planned tables/RLS/indexes are verified, and remote schema push is explicitly deferred.
+Complete. Local Supabase reset applies the MVP schema migrations cleanly, planned tables/RLS/indexes are verified, and the remote schema push has been completed.
 
 Do not run this prompt until:
 - B01 Supabase foundation is complete

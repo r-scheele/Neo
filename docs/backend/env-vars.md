@@ -1,6 +1,6 @@
 # Backend Environment Variables
 
-Date: 2026-05-27
+Date: 2026-05-28
 
 Status: placeholders documented; real values stay outside git.
 
@@ -40,3 +40,9 @@ Do not put database passwords or access tokens in Expo client code.
 ## Supabase Edge Function Secrets
 
 Store server secrets with `supabase secrets set`, not in the Expo app. See `docs/backend/supabase-secrets-setup.md`.
+
+Current B04 state:
+
+- `CLERK_JWKS_URL` is set in Supabase secrets and is used for Clerk JWT verification.
+- `CLERK_SECRET_KEY` is not set yet. It is not required for the current JWKS token verification path, but may be required for future Clerk API calls or Clerk webhook verification.
+- Supabase runtime variables such as `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are reserved by Supabase and are provided to Edge Functions by the platform/runtime. Do not commit them to `.env` or client code.
