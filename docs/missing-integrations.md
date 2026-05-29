@@ -31,6 +31,7 @@ The repository is now separated into:
 - Backend Phase B B06 server-side permissions/audit logging is complete for current sensitive commerce endpoints.
 - Backend Phase B B07 WhatsApp workflow integration is complete for setup status, webhook ingestion, conversations, send actions, follow-up sends, and Today unread chat counts.
 - Backend Phase B B08 AI draft generation backend is complete for server-side draft generation, guardrail routing, and approval queue wiring.
+- Backend Phase B B09 live provider QA and credential rotation is planned, split into B09A-B09G, and must not be run all at once.
 - Active runnable prompts are Phase A in `docs/integration-prompts/integration-prompt-index.md`.
 - Backend/API prompts are Phase B in `docs/integration-prompts/backend-deferred/backend-deferred-index.md`.
 
@@ -53,7 +54,7 @@ The repository is now separated into:
 
 ## Phase B: Backend/API Integrations
 
-B01 Supabase foundation, B02 API client/auth boundary, B03 database schema readiness, B04 server auth/profile bootstrap, B05 commerce records backend sync, B06 server-side permissions/audit logging, B07 WhatsApp workflow integration, and B08 AI draft generation backend are complete for current MVP workflows.
+B01 Supabase foundation, B02 API client/auth boundary, B03 database schema readiness, B04 server auth/profile bootstrap, B05 commerce records backend sync, B06 server-side permissions/audit logging, B07 WhatsApp workflow integration, and B08 AI draft generation backend are complete for current MVP workflows. B09 is planned for live provider QA and credential rotation only.
 
 | Order | Integration | Required for real MVP | Current status | Missing packages | Missing config | Missing env vars | Depends on | Decision that unlocks it | Acceptance criteria |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -65,6 +66,7 @@ B01 Supabase foundation, B02 API client/auth boundary, B03 database schema readi
 | B06 | Server-side permissions and audit logs | Yes | Complete | No client package decision needed | Trusted role source implementation, server authorization, denied-write responses, audit log writes | Clerk and Supabase service secrets in Supabase secrets, not client | B04, B05, approved permissions/audit contract | Implemented for current order, receipt, follow-up, and approval write endpoints | Sensitive actions require server approval; denied writes do not mutate data; audit records exist. |
 | B07 | WhatsApp workflow integration | Yes for real MVP | Complete for MVP wiring | No direct client package approved | Backend WhatsApp Cloud API/webhook integration, mobile status/conversation/send endpoints; media remains deferred | Meta WhatsApp secrets in Supabase secrets, not client | B04, B05 | Meta WhatsApp secrets configured; webhook and send/status/conversation endpoints implemented | Connection status, inbox, thread, and send actions use backend APIs safely. |
 | B08 | AI draft generation backend | Yes for real MVP | Complete | No direct client package approved | Server-side AI orchestration, prompt minimization, draft API contract | OpenAI/API provider secret in Supabase secrets, not client | B04, B07 live WhatsApp context | Server-side OpenAI secret and guardrail policy implemented | Drafts are generated server-side and sensitive drafts route to approval. |
+| B09 | Live provider QA and credential rotation | Yes before production | Planned | No new package approved | Live provider test plan, QA evidence, safety audit, and credential rotation docs | Existing provider secrets by name only; new test credentials handled outside git during B09F | B07, B08 | Approved test numbers/accounts and QA rules | Live provider behavior is verified safely and shared test credentials are rotated after QA. |
 
 ## Integrations Not Required Immediately
 
@@ -73,6 +75,10 @@ B01 Supabase foundation, B02 API client/auth boundary, B03 database schema readi
 | Runtime image registry | Complete enough | `constants/images.ts` exists and runtime PNG assets resolve. Keep a smoke check in Phase A prompt 12. |
 | Marketing website | Scaffolded separately | `apps/marketing` owns `neo.com`; it is not part of the mobile MVP integration queue. |
 | Web dashboard | Scaffolded/deferred | `apps/web` reserves `app.neo.com`; do not build real workflows until product scope exists. |
+| Full web dashboard workflows | Deferred web/marketing track | Tracked in `docs/integration-prompts/deferred-web-marketing/`; not part of B09. |
+| Web auth enforcement | Deferred web/marketing track | Requires explicit switch to web dashboard work. |
+| Production deployment config | Deferred web/marketing track | Requires explicit deployment scope and env/domain decisions. |
+| Real signup/waitlist integrations | Deferred web/marketing track | Requires explicit marketing/signup integration scope. |
 | Push notifications | Deferred | Current MVP only requires in-app attention badges. |
 | Camera/photos/media picker | Deferred until backend/media decision | Real receipt upload needs secure backend/media storage first. |
 | Location/maps | Not needed | Delivery zones use manual text entry. |

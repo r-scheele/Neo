@@ -1,8 +1,8 @@
 # Backend Deferred Prompt Index
 
-Status values: `Blocked`, `Ready`, `Complete`, `Deferred`.
+Status values: `Blocked`, `Ready`, `Planned`, `Complete`, `Deferred`.
 
-All prompts in this index are Phase B. B01 Supabase foundation, B02 API/auth boundary, B03 database schema readiness, B04 server auth/profile bootstrap, B05 commerce records backend sync, B06 permissions/audit logging, B07 WhatsApp workflow integration, and B08 AI draft generation backend are complete for MVP wiring.
+All prompts in this index are Phase B. B01 Supabase foundation, B02 API/auth boundary, B03 database schema readiness, B04 server auth/profile bootstrap, B05 commerce records backend sync, B06 permissions/audit logging, B07 WhatsApp workflow integration, and B08 AI draft generation backend are complete for MVP wiring. B09 is planned as split live-provider QA and credential-rotation prompts.
 
 Monorepo note: backend prompts target `supabase/` plus client API boundaries in `apps/mobile` or future `apps/web`. They should not target the public marketing site except for harmless public CTA/config references.
 
@@ -16,6 +16,7 @@ Monorepo note: backend prompts target `supabase/` plus client API boundaries in 
 | B06 | Server-side permissions and audit logs | `prompts/B06-server-side-permissions-audit-logs.md` | Complete | Trusted role checks, denied-write responses, and audit writes for current sensitive commerce endpoints | `enforce server permissions` |
 | B07 | WhatsApp workflow integration | `prompts/B07-whatsapp-workflow-integration.md` | Complete | Meta WhatsApp secrets in Supabase secrets; webhook/send/status/conversation endpoints implemented | `connect whatsapp workflow` |
 | B08 | AI draft generation backend | `prompts/B08-ai-draft-generation-backend.md` | Complete | Server-side OpenAI secret configured; minimized WhatsApp context, guardrail routing, and approval queue wiring implemented | `connect ai draft workflow` |
+| B09 | Live provider QA and credential rotation | `prompts/B09-live-provider-qa-and-credential-rotation.md` plus `B09/prompts/B09A-B09G` | Planned | Run one B09 prompt at a time; use approved test providers only; rotate shared test credentials after QA | `add B09 live provider qa prompts` |
 
 ## Current Backend Foundation
 
@@ -30,4 +31,6 @@ Monorepo note: backend prompts target `supabase/` plus client API boundaries in 
 
 ## Next Prompt
 
-Next backend work should focus on launch hardening and later media/OCR/payment prompts. Rotate shared test provider credentials before production.
+Run `B09/prompts/B09A-whatsapp-webhook-live-qa.md` first only when approved test numbers/accounts are ready. Do not run all B09 prompts at once.
+
+Deferred web/marketing/dashboard work is tracked separately in `docs/integration-prompts/deferred-web-marketing/` and is not part of B09.
