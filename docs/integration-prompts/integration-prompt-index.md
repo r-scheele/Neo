@@ -2,6 +2,8 @@
 
 This is the active Phase A prompt sequence. It is intentionally client/local only so prompts can be run in order without hitting deferred backend/API decisions.
 
+Monorepo note: Phase A client prompts target `apps/mobile` unless a prompt explicitly names the marketing site, future web dashboard, or shared package.
+
 Status values: `Not started`, `In progress`, `Blocked`, `Complete`.
 
 Backend/API prompts are not mixed into this sequence. See `backend-deferred/backend-deferred-index.md` for Phase B.
@@ -44,6 +46,7 @@ Do not run Phase B prompts from the active sequence. Use `backend-deferred/backe
 | --- | --- | --- |
 | Runtime image registry | Complete enough | `constants/images.ts` maps runtime PNG assets from `assets/images/`; keep a smoke check in Prompt 12 rather than a separate prompt. |
 | NativeWind/Tailwind config | Complete for current setup | The current NativeWind v5/Tailwind v4 CSS-first setup is documented; no extra config prompt is needed now. |
+| Product surface separation | Complete enough | `apps/mobile`, `apps/marketing`, `apps/web`, and `packages/shared` exist. Marketing and future dashboard prompts should stay out of the mobile MVP sequence. |
 
 ## Optional Or Later Integrations
 

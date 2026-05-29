@@ -4,6 +4,8 @@ Status values: `Blocked`, `Ready`, `Complete`, `Deferred`.
 
 All prompts in this index are Phase B. B01 Supabase foundation, B02 API/auth boundary, B03 database schema readiness, B04 server auth/profile bootstrap, B05 commerce records backend sync, B06 permissions/audit logging, B07 WhatsApp workflow integration, and B08 AI draft generation backend are complete for MVP wiring.
 
+Monorepo note: backend prompts target `supabase/` plus client API boundaries in `apps/mobile` or future `apps/web`. They should not target the public marketing site except for harmless public CTA/config references.
+
 | Order | Integration | Prompt File | Status | Unlocking Decisions | Suggested Commit |
 | --- | --- | --- | --- | --- | --- |
 | B01 | Backend provider decision | `prompts/B01-backend-provider-decision.md` | Complete | Supabase project linked; local `supabase/` foundation scaffolded | `document supabase backend foundation` |
@@ -21,6 +23,7 @@ All prompts in this index are Phase B. B01 Supabase foundation, B02 API/auth bou
 - Supabase URL pattern: `https://xtalfjnmxnwtogxgtlxn.supabase.co`
 - Edge Functions base URL pattern: `https://xtalfjnmxnwtogxgtlxn.supabase.co/functions/v1`
 - Public API base URL env var: `EXPO_PUBLIC_API_BASE_URL`
+- Future web dashboard public API base URL env var: `NEXT_PUBLIC_API_BASE_URL`
 - Local migrations exist, validate locally, and are applied to the remote Supabase project.
 - Edge Function foundations exist. `orders`, `customers`, `receipts`, `follow-ups`, `approvals`, `whatsapp-send-message`, `whatsapp-webhook`, and `ai-drafts` are implemented for the current backend passes.
 - `CLERK_JWKS_URL`, Meta WhatsApp secrets, and `OPENAI_API_KEY` are set in Supabase secrets. `CLERK_SECRET_KEY` remains pending for future Clerk API/webhook needs.

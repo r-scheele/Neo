@@ -4,6 +4,8 @@ Status values: `Not started`, `In progress`, `Blocked`, `Complete`.
 
 Note: `Complete` means the local MVP screen/feature implementation exists. Production service integration status is tracked separately in `docs/integration-prompts/integration-prompt-index.md`.
 
+Monorepo note: mobile feature prompts target `apps/mobile` unless the prompt explicitly names `apps/marketing`, `apps/web`, or `packages/shared`.
+
 | Order | Feature | Prompt File | Depends On | UI Reference | Runtime Assets | Status | Suggested Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 01 | Welcome screen | `prompts/01-welcome-screen.md` | App shell, `AGENTS.md`, image constants | `design-assets/ui-screens/welcome.png` | `logoMarkNeo`, `onboardingHeroNeoOperatingSystem` | Complete | `add welcome screen` |

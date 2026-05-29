@@ -6,7 +6,9 @@ Date: 2026-05-27
 
 Neo needs a server-owned API boundary before any real WhatsApp, AI, receipt, payment, order, customer, role, audit, or cross-device sync work is implemented.
 
-The current Expo app remains a local MVP prototype. It can keep using typed dev fixtures for screens, but it must not call WhatsApp, AI providers, payment providers, OCR services, databases, or webhook handlers directly from the mobile client.
+The current Expo app in `apps/mobile` remains the primary local MVP prototype. It can keep using typed dev fixtures for screens, but it must not call WhatsApp, AI providers, payment providers, OCR services, databases, or webhook handlers directly from the mobile client.
+
+The Next.js marketing site in `apps/marketing` must not call sensitive commerce APIs. The future Next.js dashboard in `apps/web` is scaffolded only; when real web-dashboard work begins, it must use the same server-owned Supabase Edge Function boundary and must not embed server secrets.
 
 The backend foundation is now selected and linked:
 
@@ -44,7 +46,8 @@ These decisions are approved for the B01 foundation:
 | Database | Supabase Postgres | Initial migration scaffold exists locally. |
 | Backend execution | Supabase Edge Functions | Function folders are scaffolded. |
 | Backend auth strategy | Clerk-authenticated requests to Edge Functions | Client token handoff exists from B02; server verification and profile bootstrap exist locally from B04. |
-| API base URL variable | `EXPO_PUBLIC_API_BASE_URL` | Points at Supabase Edge Functions base URL. |
+| Mobile API base URL variable | `EXPO_PUBLIC_API_BASE_URL` | Points at Supabase Edge Functions base URL for `apps/mobile`. |
+| Web dashboard API base URL variable | `NEXT_PUBLIC_API_BASE_URL` | Future public Edge Functions base URL for `apps/web`; server secrets still stay server-side. |
 | Public Supabase variables | `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Empty placeholders only in `.env.example`. |
 | Media storage | Supabase Storage | Buckets are documented, not created remotely. |
 | Webhook strategy | Supabase Edge Functions | WhatsApp and Clerk webhook stubs exist. |
@@ -69,7 +72,23 @@ The Expo app may only contain public values approved for mobile distribution:
 - `EXPO_PUBLIC_POSTHOG_KEY`
 - `EXPO_PUBLIC_POSTHOG_HOST`
 
-The Expo app must never contain:
+The marketing site may only contain public values approved for static/public web distribution:
+
+- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_SITE_URL`
+- `NEXT_PUBLIC_POSTHOG_KEY`
+- `NEXT_PUBLIC_POSTHOG_HOST`
+
+The future web dashboard may only contain public values approved for browser distribution:
+
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_API_BASE_URL`
+- `NEXT_PUBLIC_POSTHOG_KEY`
+- `NEXT_PUBLIC_POSTHOG_HOST`
+
+No client app must ever contain:
 
 - Clerk secret keys.
 - WhatsApp access tokens.
