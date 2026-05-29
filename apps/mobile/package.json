@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "@clerk/clerk-expo": "^2.19.36",
-    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-async-storage/async-storage": "3.1.0",
     "expo": "~56.0.5",
     "expo-application": "~56.0.3",
     "expo-constants": "~56.0.15",
