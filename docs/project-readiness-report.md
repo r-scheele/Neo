@@ -4,24 +4,28 @@ Date: 2026-05-27
 
 ## Current Phase
 
-Neo is in the local MVP prototype and integration-readiness phase.
+Neo is in the local MVP prototype and integration-readiness phase. The repo is now an npm workspace monorepo with separate marketing, future web dashboard, mobile, shared-contract, and Supabase surfaces.
 
-The Expo/React Native app scaffold exists. The primary MVP screens, route groups, runtime image registry, design tokens, Clerk wiring, route guards, safe local setup/preferences persistence, typed analytics helpers, typed API/auth boundary, screen-state coverage, local-only state hardening, manual QA baseline, partial manual QA results, client release precheck, Supabase backend foundation, backend commerce sync, and B06 permissions/audit handling are implemented for local use. The app is not ready for a client release candidate or real MVP release because full signed-in Clerk/manual QA, WhatsApp sync, AI calls, OCR/payment verification, and transaction-safe audit hardening remain pending.
+The Expo/React Native app scaffold lives in `apps/mobile`. The primary MVP screens, route groups, runtime image registry, design tokens, Clerk wiring, route guards, safe local setup/preferences persistence, typed analytics helpers, typed API/auth boundary, screen-state coverage, local-only state hardening, manual QA baseline, partial manual QA results, client release precheck, Supabase backend foundation, backend commerce sync, and B06 permissions/audit handling are implemented for local use. The app is not ready for a client release candidate or real MVP release because full signed-in Clerk/manual QA, WhatsApp sync, AI calls, OCR/payment verification, and transaction-safe audit hardening remain pending.
 
 ## Workspace Inspection
 
 | Item | Status | Notes |
 | --- | --- | --- |
 | `AGENTS.md` | Exists | Current project rules and product guardrails are present. |
-| `package.json` | Exists | Expo scripts for start, web, iOS, Android, lint, and typecheck are present. |
-| `app/` | Exists | Expo Router auth, setup, tabs, detail, and modal routes are present. |
-| `components/` | Exists | Feedback and layout components exist. |
-| `features/` | Exists | MVP feature screens and typed fixture/local data exist. |
-| `stores/` | Exists | Setup, user preference, operations, connectivity, safe storage reset, and related local stores exist; customer-facing draft text remains component-local until a storage decision is approved. |
-| `lib/` | Exists | Analytics, safe storage, and API client boundary helpers exist. |
+| `package.json` | Exists | Root npm workspace orchestrator scripts are present. |
+| `apps/mobile/package.json` | Exists | Expo scripts for start, web, iOS, Android, lint, and typecheck are present. |
+| `apps/mobile/app/` | Exists | Expo Router auth, setup, tabs, detail, and modal routes are present. |
+| `apps/mobile/components/` | Exists | Feedback and layout components exist. |
+| `apps/mobile/features/` | Exists | MVP feature screens and typed fixture/local data exist. |
+| `apps/mobile/stores/` | Exists | Setup, user preference, operations, connectivity, safe storage reset, and related local stores exist; customer-facing draft text remains component-local until a storage decision is approved. |
+| `apps/mobile/lib/` | Exists | Analytics, safe storage, and API client boundary helpers exist. |
+| `apps/marketing/` | Exists | `neo.com` Next.js marketing site exists with landing page implementation. |
+| `apps/web/` | Exists | `app.neo.com` future dashboard scaffold exists; real workflows are deferred. |
+| `packages/shared/` | Exists | Shared TypeScript contracts and constants exist without UI. |
 | `supabase/` | Exists | Supabase project is linked; migration and Edge Function scaffolds exist locally. |
-| `constants/` | Exists | Colors, spacing, typography, routes, and runtime image imports exist. |
-| `assets/images/` | Exists | Runtime raster assets are present and referenced through `constants/images.ts`. |
+| `apps/mobile/constants/` | Exists | Colors, spacing, typography, routes, and runtime image imports exist. |
+| `apps/mobile/assets/images/` | Exists | Runtime raster assets are present and referenced through `constants/images.ts`. |
 | `.env.example` | Exists | Contains public Expo client placeholders only. |
 | `metro.config.js` | Exists | Wraps the Expo Metro config with NativeWind. |
 | `postcss.config.mjs` | Exists | Uses `@tailwindcss/postcss` for Tailwind v4. |
@@ -32,7 +36,10 @@ The Expo/React Native app scaffold exists. The primary MVP screens, route groups
 
 ## What Already Exists
 
-- Expo app shell with Expo Router.
+- Expo app shell with Expo Router in `apps/mobile`.
+- Next.js marketing site in `apps/marketing`.
+- Minimal future web dashboard scaffold in `apps/web`.
+- Shared TypeScript contracts in `packages/shared`.
 - Welcome, sign-in, setup, tabs, detail, receipt, customer, order, and permission routes.
 - Clerk provider, auth screens, route guards, setup guards, protected tabs, protected details, and sign-out clearing.
 - Local/mock MVP screens for Today, Inbox, Conversation, Orders, Approvals, Receipt Review, Follow-ups, Customer Profile, Settings, and setup.

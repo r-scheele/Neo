@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/images/logo-mark-neo.png" alt="Neo logo" width="112" />
+  <img src="apps/mobile/assets/images/logo-mark-neo.png" alt="Neo logo" width="112" />
 </p>
 
 # Neo
@@ -12,6 +12,14 @@ Neo is built for WhatsApp-first sellers who manage chats, product questions, ord
 
 `ai-commerce` `whatsapp-commerce` `nigerian-smes` `expo` `react-native` `typescript` `mobile-app` `commerce-operations` `receipt-review` `order-management`
 
+## Product Surfaces
+
+- `apps/marketing`: Next.js marketing site for `neo.com`.
+- `apps/web`: Next.js scaffold for the future `app.neo.com` dashboard.
+- `apps/mobile`: Expo iOS/Android mobile app and current primary MVP.
+- `packages/shared`: shared TypeScript contracts only.
+- `supabase`: backend database, Edge Functions, Storage, and migrations.
+
 ## Stack
 
 - Expo
@@ -23,6 +31,7 @@ Neo is built for WhatsApp-first sellers who manage chats, product questions, ord
 - AsyncStorage
 - PostHog React Native
 - Supabase Postgres, Edge Functions, and Storage for the approved backend foundation
+- Next.js for marketing and future web dashboard surfaces
 
 ## Development
 
@@ -30,7 +39,9 @@ Neo is built for WhatsApp-first sellers who manage chats, product questions, ord
 npm install
 npm run typecheck
 npm run lint
-npm run web
+npm run dev:mobile
+npm run dev:marketing
+npm run dev:web
 ```
 
 There is no unit test script yet. The local MVP app scaffold and primary screens exist; production integrations are tracked in `docs/integration-prompts/` and should run one pass at a time.
@@ -39,7 +50,7 @@ Manual QA lives in `docs/manual-qa-baseline.md`; the latest partial local run is
 
 ## Environment
 
-Use `.env.example` as the public client placeholder list only:
+Use `.env.example` as the public client placeholder index only. App-specific examples live in each app folder.
 
 - `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`
 - `EXPO_PUBLIC_SUPABASE_URL`
@@ -56,7 +67,7 @@ Phase A client/local prompts are complete. Backend Phase B has started: B01 Supa
 
 ## Config Notes
 
-NativeWind v5 uses Tailwind CSS v4's CSS-first setup in `src/global.css`. The current app uses `metro.config.js`, `postcss.config.mjs`, and the root CSS import in `app/_layout.tsx`; `babel.config.js`, `tailwind.config.js`, and `nativewind.config.js` are intentionally absent unless a future customization requires them.
+NativeWind v5 uses Tailwind CSS v4's CSS-first setup in `apps/mobile/src/global.css`. The mobile app uses `apps/mobile/metro.config.js`, `apps/mobile/postcss.config.mjs`, and the CSS import in `apps/mobile/app/_layout.tsx`; `babel.config.js`, `tailwind.config.js`, and `nativewind.config.js` are intentionally absent unless a future customization requires them.
 
 ## Safety Notes
 

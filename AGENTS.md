@@ -16,6 +16,18 @@ Nigerian WhatsApp-first SME owners and trusted staff who sell through informal c
 Primary user outcome:
 The seller can see urgent work, review customer conversations, approve or edit AI drafts, capture orders from chat, review receipt screenshots safely, send respectful follow-ups, remember customers, and stay in control of daily commerce operations.
 
+## Product Surfaces
+
+Neo is a monorepo with three product surfaces:
+
+- `apps/marketing`: `neo.com` marketing site for public landing, pricing, features, resources, SEO, and signup CTAs.
+- `apps/web`: `app.neo.com` future web dashboard for desktop operations. It is scaffolded only unless a prompt explicitly scopes web dashboard product work.
+- `apps/mobile`: Expo iOS/Android mobile app. This remains the primary MVP product for WhatsApp-first sellers and operators.
+- `packages/shared`: shared TypeScript contracts, constants, error codes, and domain types only. Do not put React Native UI, Next.js UI, routing, app-specific hooks, or secrets here.
+- `supabase`: backend database, Edge Functions, migrations, storage docs, and server-owned API execution.
+
+Do not mix surfaces. Marketing code belongs in `apps/marketing`, future dashboard code belongs in `apps/web`, and mobile routes/features belong in `apps/mobile`.
+
 MVP feature list:
 - Business setup.
 - WhatsApp connection status.
@@ -85,7 +97,11 @@ Planned stack:
 - EAS Build.
 
 Current status:
-- The app scaffold may not exist yet.
+- The repository is an npm workspace monorepo.
+- The current Expo mobile app lives in `apps/mobile`.
+- The public marketing site lives in `apps/marketing`.
+- The future web dashboard scaffold lives in `apps/web`.
+- Shared contracts live in `packages/shared`.
 - Do not install packages unless the prompt explicitly asks for setup work and dependency approval is clear.
 - Do not introduce a custom backend or database during initial app scaffold or first UI screen work.
 
@@ -123,15 +139,15 @@ Approved backend foundation:
 - Server secrets live in Supabase secrets, not in the mobile app.
 
 Route architecture:
-- `app/(auth)/`: logged-out and identity routes such as `welcome` and `sign-in`.
-- `app/(setup)/`: required business setup such as setup checklist, business profile, WhatsApp setup, AI rules, payments, delivery zones, and products.
-- `app/(tabs)/`: returning-user tabs: Today, Inbox, Approvals, Follow-ups, Settings.
-- `app/conversation/[id].tsx`: conversation detail.
-- `app/order/new.tsx`: create order.
-- `app/order/[id].tsx`: order detail.
-- `app/receipt/[id].tsx`: receipt review.
-- `app/customer/[id].tsx`: customer profile.
-- `app/modals/`: focused decisions, filters, confirmations, and permission explanations.
+- `apps/mobile/app/(auth)/`: logged-out and identity routes such as `welcome` and `sign-in`.
+- `apps/mobile/app/(setup)/`: required business setup such as setup checklist, business profile, WhatsApp setup, AI rules, payments, delivery zones, and products.
+- `apps/mobile/app/(tabs)/`: returning-user tabs: Today, Inbox, Approvals, Follow-ups, Settings.
+- `apps/mobile/app/conversation/[id].tsx`: conversation detail.
+- `apps/mobile/app/order/new.tsx`: create order.
+- `apps/mobile/app/order/[id].tsx`: order detail.
+- `apps/mobile/app/receipt/[id].tsx`: receipt review.
+- `apps/mobile/app/customer/[id].tsx`: customer profile.
+- `apps/mobile/app/modals/`: focused decisions, filters, confirmations, and permission explanations.
 
 The first Home screen maps to Today Command Center, not a marketing landing page.
 
@@ -140,54 +156,64 @@ The first Home screen maps to Today Command Center, not a marketing landing page
 Expected future structure:
 
 ```text
-app/
-components/
-  ui/
-  forms/
-  feedback/
-  layout/
-  navigation/
-features/
-  setup/
-  today/
-  inbox/
-  approvals/
-  receipts/
-  follow-ups/
-stores/
-lib/
-  analytics/
-  auth/
-  storage/
-  formatting/
-  mocks/
-constants/
-  colors.ts
-  spacing.ts
-  typography.ts
-  images.ts
-  routes.ts
-assets/
-  images/
-  icons/
-types/
+apps/
+  marketing/
+  web/
+  mobile/
+    app/
+    components/
+      ui/
+      forms/
+      feedback/
+      layout/
+      navigation/
+    features/
+      setup/
+      today/
+      inbox/
+      approvals/
+      receipts/
+      follow-ups/
+    stores/
+    lib/
+      analytics/
+      auth/
+      storage/
+      formatting/
+      mocks/
+    constants/
+      colors.ts
+      spacing.ts
+      typography.ts
+      images.ts
+      routes.ts
+    assets/
+      images/
+      icons/
+    types/
+packages/
+  shared/
 docs/
 design-assets/
+supabase/
 ```
 
 Rules:
-- Put Expo Router route files and route layouts only in `app/`.
+- Put Expo Router route files and route layouts only in `apps/mobile/app/`.
+- Put Next.js marketing routes only in `apps/marketing/app/`.
+- Put future Next.js dashboard routes only in `apps/web/app/`.
 - Move repeated UI and logic out of route files.
-- Put reusable UI primitives in `components/ui/`.
-- Put reusable form components in `components/forms/`.
-- Put loading, empty, error, success, offline, and permission components in `components/feedback/`.
+- Put mobile reusable UI primitives in `apps/mobile/components/ui/`.
+- Put mobile reusable form components in `apps/mobile/components/forms/`.
+- Put mobile loading, empty, error, success, offline, and permission components in `apps/mobile/components/feedback/`.
 - Build screen-specific UI inside the feature first.
 - Promote to `components/` only after reuse is real.
-- Put feature-specific UI, hooks, mock data, and local types in `features/<feature>/`.
-- Put Zustand stores in `stores/`; stores must not import UI.
-- Put analytics, auth, storage, formatting, and mocks in `lib/`.
-- Put stable colors, spacing, typography, image imports, and route names in `constants/`.
-- Put cross-feature shared types in `types/`.
+- Put mobile feature-specific UI, hooks, mock data, and local types in `apps/mobile/features/<feature>/`.
+- Put mobile Zustand stores in `apps/mobile/stores/`; stores must not import UI.
+- Put mobile analytics, auth, storage, formatting, and mocks in `apps/mobile/lib/`.
+- Put mobile stable colors, spacing, typography, image imports, and route names in `apps/mobile/constants/`.
+- Put cross-feature shared mobile types in `apps/mobile/types/`.
+- Put cross-surface TypeScript contracts in `packages/shared/`.
 - Do not create vague catch-all files such as `helpers.ts`, `utils.ts`, or `misc.ts` unless the project already has a clear convention.
 
 ## Navigation Rules
@@ -257,6 +283,8 @@ UI requirements:
 
 - Runtime raster assets belong in `assets/images/`.
 - Runtime SVG source artwork belongs in `assets/icons/`.
+- Mobile runtime raster assets belong in `apps/mobile/assets/images/`.
+- Mobile runtime SVG source artwork belongs in `apps/mobile/assets/icons/`.
 - UI design reference screenshots belong in `design-assets/ui-screens/`.
 - Do not import UI design reference screenshots into the app.
 - Import runtime PNG assets through `constants/images.ts`.
@@ -335,6 +363,20 @@ Allowed public Expo variables only when setup begins:
 - `EXPO_PUBLIC_API_BASE_URL`
 - `EXPO_PUBLIC_POSTHOG_KEY`
 - `EXPO_PUBLIC_POSTHOG_HOST`
+
+Allowed public marketing variables:
+- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_SITE_URL`
+- `NEXT_PUBLIC_POSTHOG_KEY`
+- `NEXT_PUBLIC_POSTHOG_HOST`
+
+Allowed public web dashboard variables:
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_API_BASE_URL`
+- `NEXT_PUBLIC_POSTHOG_KEY`
+- `NEXT_PUBLIC_POSTHOG_HOST`
 
 Stop and explain the needed backend boundary before implementing real:
 - WhatsApp message sync.
@@ -454,7 +496,11 @@ During implementation:
 - Do not implement real WhatsApp sync, AI calls, receipt extraction, payment verification, backend sync, or admin monitoring without a backend architecture decision.
 - Do not auto-confirm manual transfer receipts from screenshots.
 - Do not imply AI replaces human judgment.
-- Do not add public marketing pages, billing portals, broadcast campaigns, advanced reports, admin consoles, or workflow builders to the MVP unless explicitly requested.
+- Do not add public marketing pages outside `apps/marketing` unless explicitly requested.
+- Do not add billing portals, broadcast campaigns, advanced reports, admin consoles, or workflow builders to the MVP unless explicitly requested.
+- Do not put marketing website code in `apps/mobile`.
+- Do not put mobile app code in `apps/marketing`.
+- Do not implement the future web dashboard beyond the requested scaffold unless explicitly requested.
 - Do not create routes for future modules without a feature spec.
 - Do not use `any`.
 - Do not refactor unrelated code.

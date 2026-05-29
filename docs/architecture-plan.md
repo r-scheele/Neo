@@ -1,6 +1,6 @@
 # Architecture Plan
 
-Status: Current client architecture for the local MVP prototype. App source exists; production integrations remain pending.
+Status: Current multi-app architecture for the local MVP prototype. The Expo mobile app remains the primary MVP product; marketing and future web dashboard surfaces are now separate workspaces.
 
 ## Sources
 
@@ -16,13 +16,19 @@ Status: Current client architecture for the local MVP prototype. App source exis
 
 ## Architecture Summary
 
-Neo should be built as a mobile-first Expo app using React Native, TypeScript, Expo Router, NativeWind, Zustand, AsyncStorage, Clerk, PostHog, and EAS Build.
+Neo is structured as an npm workspace monorepo:
 
-The current implementation is an app-first MVP prototype built feature by feature with typed local/mock fallbacks, generated assets, clear route boundaries, and a Supabase backend boundary for commerce, WhatsApp, and AI draft workflows. Receipt extraction, payment, remaining media handling, and broader multi-user sync integrations still require server-owned implementation because their secrets and sensitive operations cannot safely live in a mobile client.
+- `apps/mobile`: mobile-first Expo app using React Native, TypeScript, Expo Router, NativeWind, Zustand, AsyncStorage, Clerk, PostHog, and EAS Build.
+- `apps/marketing`: `neo.com` marketing site using Next.js.
+- `apps/web`: future `app.neo.com` dashboard scaffold using Next.js.
+- `packages/shared`: shared TypeScript contracts only.
+- `supabase`: backend foundation.
+
+The current mobile implementation is an app-first MVP prototype built feature by feature with typed local/mock fallbacks, generated assets, clear route boundaries, and a Supabase backend boundary for commerce, WhatsApp, and AI draft workflows. Receipt extraction, payment, remaining media handling, and broader multi-user sync integrations still require server-owned implementation because their secrets and sensitive operations cannot safely live in a client app.
 
 ## Primary Decision
 
-The client app has been built first. The backend provider is now selected as Supabase, with Supabase Postgres, Edge Functions, and Storage. Keep the current fixture fallbacks isolated while B05-B08 backend feature workflows are live-tested and launch-hardened.
+The mobile app has been built first and remains the MVP priority. The backend provider is Supabase, with Supabase Postgres, Edge Functions, and Storage. Keep the current fixture fallbacks isolated while backend feature workflows are live-tested and launch-hardened. The marketing site and future web dashboard must not pull backend or mobile workflows across surface boundaries.
 
 This keeps service work narrow and lets design, navigation, assets, state ownership, TypeScript, and linting stay stable before live integrations are added. Production integrations must be introduced through ordered backend prompts, not broad rewrites.
 
@@ -60,23 +66,25 @@ The B01 backend foundation answers the provider-level decisions:
 
 Feature implementation for B05-B08 is complete for MVP wiring. B04 supplies the local server auth/profile bootstrap foundation.
 
+Public marketing pages deploy from `apps/marketing` to `neo.com`. Future authenticated desktop operations deploy from `apps/web` to `app.neo.com` after explicit product scope. Mobile builds deploy from `apps/mobile` through Expo/EAS.
+
 ## Route Architecture
 
-Expo Router should follow the existing screen map without inventing extra screens.
+Expo Router in `apps/mobile` should follow the existing screen map without inventing extra screens.
 
 | Route Group | Purpose | Example Routes |
 | --- | --- | --- |
-| `app/(auth)/` | Logged-out and identity routes | welcome, sign-in |
-| `app/(setup)/` | Required business setup | setup checklist, business profile, WhatsApp setup, AI rules, payments, delivery zones, products |
-| `app/(tabs)/` | Main returning-user tabs | Today, Inbox, Approvals, Follow-ups, Settings |
-| `app/conversation/[id].tsx` | Conversation detail | Chat context and AI draft review |
-| `app/order/[id].tsx` | Order detail | Order, payment, delivery, and timeline |
-| `app/order/new.tsx` | Create order | Focused create-order flow |
-| `app/receipt/[id].tsx` | Receipt review | Focused human payment-review flow |
-| `app/customer/[id].tsx` | Customer profile | Customer memory and history |
-| `app/modals/` | Focused decisions | Filters, confirmations, permission explanations |
+| `apps/mobile/app/(auth)/` | Logged-out and identity routes | welcome, sign-in |
+| `apps/mobile/app/(setup)/` | Required business setup | setup checklist, business profile, WhatsApp setup, AI rules, payments, delivery zones, products |
+| `apps/mobile/app/(tabs)/` | Main returning-user tabs | Today, Inbox, Approvals, Follow-ups, Settings |
+| `apps/mobile/app/conversation/[id].tsx` | Conversation detail | Chat context and AI draft review |
+| `apps/mobile/app/order/[id].tsx` | Order detail | Order, payment, delivery, and timeline |
+| `apps/mobile/app/order/new.tsx` | Create order | Focused create-order flow |
+| `apps/mobile/app/receipt/[id].tsx` | Receipt review | Focused human payment-review flow |
+| `apps/mobile/app/customer/[id].tsx` | Customer profile | Customer memory and history |
+| `apps/mobile/app/modals/` | Focused decisions | Filters, confirmations, permission explanations |
 
-The first Home screen implementation should map to the Today Command Center tab, not a marketing landing page.
+The first mobile Home screen implementation should map to the Today Command Center tab, not a marketing landing page. The public marketing homepage belongs in `apps/marketing`.
 
 ## Data Flow
 
@@ -135,6 +143,8 @@ The current NativeWind v5/Tailwind v4 setup is CSS-first:
 - `postcss.config.mjs` uses `@tailwindcss/postcss`.
 - `src/global.css` imports Tailwind layers, imports `nativewind/theme`, and defines Neo theme tokens.
 - `app/_layout.tsx` imports `src/global.css` at the root.
+
+After the monorepo migration these files live under `apps/mobile/`.
 
 `babel.config.js`, `tailwind.config.js`, and `nativewind.config.js` are intentionally absent. Do not add them unless a future Tailwind customization or NativeWind version change makes them necessary.
 

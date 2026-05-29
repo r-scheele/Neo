@@ -4,6 +4,15 @@ Date: 2026-05-27
 
 This file lists what is complete, what is runnable now, and what is deferred until each backend phase is ready.
 
+## Product Surface Note
+
+The repository is now separated into:
+
+- `apps/mobile`: current Expo mobile MVP app and primary integration target.
+- `apps/marketing`: `neo.com` marketing site. It should not call sensitive commerce APIs.
+- `apps/web`: future `app.neo.com` dashboard scaffold. Real dashboard workflows remain deferred.
+- `packages/shared`: shared TypeScript contracts only.
+
 ## Current Summary
 
 - Prompt 05 AsyncStorage persistence completion is complete.
@@ -62,6 +71,8 @@ B01 Supabase foundation, B02 API client/auth boundary, B03 database schema readi
 | Integration | Status | Reason |
 | --- | --- | --- |
 | Runtime image registry | Complete enough | `constants/images.ts` exists and runtime PNG assets resolve. Keep a smoke check in Phase A prompt 12. |
+| Marketing website | Scaffolded separately | `apps/marketing` owns `neo.com`; it is not part of the mobile MVP integration queue. |
+| Web dashboard | Scaffolded/deferred | `apps/web` reserves `app.neo.com`; do not build real workflows until product scope exists. |
 | Push notifications | Deferred | Current MVP only requires in-app attention badges. |
 | Camera/photos/media picker | Deferred until backend/media decision | Real receipt upload needs secure backend/media storage first. |
 | Location/maps | Not needed | Delivery zones use manual text entry. |
@@ -81,3 +92,5 @@ B01 Supabase foundation, B02 API client/auth boundary, B03 database schema readi
 | `EXPO_PUBLIC_POSTHOG_HOST` | Present in `.env.example`; real value outside git if non-default host is used | Current code can default host. |
 
 No private backend, WhatsApp, AI, payment, webhook, database, or Clerk secret env vars should be added to the Expo client. `OPENAI_API_KEY` is configured only as a Supabase secret for the B08 Edge Function.
+
+See `docs/architecture/env-boundaries.md` for the separate `NEXT_PUBLIC_*` boundaries for marketing and web dashboard apps.

@@ -6,6 +6,7 @@ Status: Draft canonical backlog recovered from `docs/initial-feature-backlog.md`
 
 - One row per feature.
 - Neo is one consolidated product; backlog priorities describe build order, not separate product ideas.
+- Product surfaces are separate: `apps/marketing` for public marketing, `apps/web` for future desktop dashboard, and `apps/mobile` for the current mobile MVP.
 - MVP features must support review, reply, capture, verify, fulfill, remember, measure, delegate, or follow up.
 - AI-sensitive actions stay draft-first or approval-first.
 - Manual bank transfer screenshots never auto-confirm payment.
@@ -40,6 +41,7 @@ Status: Draft canonical backlog recovered from `docs/initial-feature-backlog.md`
 | P2 | Broadcast templates | Supports campaigns and utility messages | Broadcasts | Template, audience, approvals | High | Draft |
 | P2 | Billing and usage | Supports SaaS monetization | Billing | Plan, usage, invoices | Medium | Draft |
 | P2 | Public marketing and demo | Explains the unified Neo promise | Landing, Pricing, Demo, Use Cases | Content, plans, demo data | Medium | Draft |
+| P2 | Web dashboard shell | Reserves app.neo.com for future desktop operations | Web Dashboard | Auth, API contracts, dashboard IA | Medium | Scaffolded only |
 | P2 | Help, legal, and trust pages | Supports adoption and compliance | Help, Legal, Trust | Articles, policies | Medium | Draft |
 | P2 | Internal admin monitoring | Lets Neo team operate the platform | Admin Console | Tenants, webhooks, AI runs, payments | High | Draft |
 
@@ -106,4 +108,3 @@ Status: Draft canonical backlog recovered from `docs/initial-feature-backlog.md`
 - Does it require sensitive permissions, payment state, or AI guardrails?
 - Can the user understand the state in one mobile glance?
 - What can go wrong if staff use this under pressure?
-
